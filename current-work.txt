@@ -18,4 +18,4 @@ If a structure is complex - define super classes with their functionality that e
 Analyze the project structure in github, learn and understand the architecture documented in detail in docs/ folder, and identify the very base classes that we need to implement, follow the rule of 1000 lines max per file, and let's start writing one file at a time. 
 When we finish writing one file, pause and ask which file to generate next.
 
-First class to generate: backend/app/processors/document_processor.py
+class to generate: backend/app/core/websocket_manager.py
