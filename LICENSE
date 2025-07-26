@@ -1,0 +1,312 @@
+PATEXIA PROPRIETARY SOFTWARE LICENSE
+
+Copyright (c) 2025 Patexia, Inc. All rights reserved.
+
+================================================================================
+IMPORTANT - READ CAREFULLY BEFORE USING THIS SOFTWARE
+================================================================================
+
+This software and associated documentation files (the "Software") are the 
+exclusive proprietary intellectual property of Patexia, Inc., a corporation 
+organized under the laws of the State of California ("Patexia"). 
+
+BY ACCESSING, DOWNLOADING, INSTALLING, OR USING THIS SOFTWARE, YOU ACKNOWLEDGE 
+THAT YOU HAVE READ THIS LICENSE AGREEMENT, UNDERSTAND IT, AND AGREE TO BE BOUND 
+BY ITS TERMS AND CONDITIONS.
+
+IF YOU DO NOT AGREE TO THE TERMS OF THIS LICENSE, DO NOT ACCESS, DOWNLOAD, 
+INSTALL, OR USE THE SOFTWARE.
+
+================================================================================
+1. GRANT OF LIMITED LICENSE
+================================================================================
+
+Subject to the terms and conditions of this License, Patexia grants you a 
+limited, non-exclusive, non-transferable, non-sublicensable, revocable license 
+to use the Software solely for the following authorized purposes:
+
+a) Internal evaluation and testing by authorized Patexia employees, contractors, 
+   and designated partners;
+b) Development and enhancement activities explicitly authorized in writing by 
+   Patexia;
+c) Demonstration to prospective clients under direct Patexia supervision;
+d) Academic research in collaboration with Patexia under executed research 
+   agreements.
+
+This license does not grant you any rights to distribute, modify, create 
+derivative works, reverse engineer, or commercially exploit the Software.
+
+================================================================================
+2. RESTRICTIONS AND PROHIBITIONS
+================================================================================
+
+You may NOT, under any circumstances:
+
+a) Copy, reproduce, distribute, publish, display, or transmit the Software or 
+   any portion thereof without prior written consent from Patexia;
+
+b) Modify, adapt, alter, translate, or create derivative works based upon the 
+   Software or any portion thereof;
+
+c) Reverse engineer, disassemble, decompile, or otherwise attempt to derive the 
+   source code, algorithms, or trade secrets contained in the Software;
+
+d) Remove, alter, or obscure any proprietary notices, labels, or marks on the 
+   Software;
+
+e) Use the Software to develop competing products or services;
+
+f) Sublicense, rent, lease, loan, or otherwise transfer rights to the Software 
+   to any third party;
+
+g) Use the Software for any commercial purpose without an executed commercial 
+   license agreement with Patexia;
+
+h) Access or use the Software in violation of any applicable laws, regulations, 
+   or industry standards;
+
+i) Attempt to circumvent or disable any security features or access controls 
+   implemented in the Software;
+
+j) Use the Software to process confidential information belonging to third 
+   parties without appropriate authorization;
+
+k) Export or re-export the Software in violation of any applicable export 
+   control laws or regulations.
+
+================================================================================
+3. INTELLECTUAL PROPERTY RIGHTS
+================================================================================
+
+The Software contains valuable trade secrets and proprietary information of 
+Patexia, including but not limited to:
+
+- Proprietary algorithms for legal document processing and analysis
+- Machine learning models and training methodologies
+- User interface designs and user experience innovations
+- Database schemas and data structures optimized for legal workflows
+- Integration methodologies with AI/ML frameworks
+- Performance optimization techniques
+- Security implementations
+
+All rights, title, and interest in and to the Software, including all 
+intellectual property rights therein, are and shall remain the exclusive 
+property of Patexia. No title to or ownership of the Software is transferred 
+to you under this License.
+
+All modifications, enhancements, or derivative works created by you based on 
+the Software shall become the exclusive property of Patexia and shall be 
+subject to the terms of this License.
+
+================================================================================
+4. CONFIDENTIALITY OBLIGATIONS
+================================================================================
+
+You acknowledge that the Software contains confidential and proprietary 
+information of Patexia ("Confidential Information"). You agree to:
+
+a) Maintain the confidentiality of all Confidential Information using the same 
+   degree of care you use to protect your own confidential information, but in 
+   no event less than reasonable care;
+
+b) Not disclose Confidential Information to any third party without prior 
+   written consent from Patexia;
+
+c) Use Confidential Information solely for the authorized purposes set forth 
+   in Section 1;
+
+d) Limit access to Confidential Information to employees or contractors who 
+   have a legitimate need to know and who have signed appropriate confidentiality 
+   agreements;
+
+e) Immediately notify Patexia of any unauthorized disclosure or use of 
+   Confidential Information.
+
+These confidentiality obligations shall survive termination of this License 
+for a period of seven (7) years.
+
+================================================================================
+5. DATA PROTECTION AND PRIVACY
+================================================================================
+
+If you use the Software to process any personal data, confidential information, 
+or proprietary data:
+
+a) You are solely responsible for ensuring compliance with all applicable 
+   privacy laws and regulations, including but not limited to GDPR, CCPA, 
+   and HIPAA where applicable;
+
+b) You must implement appropriate technical and organizational measures to 
+   protect the security and confidentiality of processed data;
+
+c) You agree to indemnify Patexia against any claims, damages, or liabilities 
+   arising from your data processing activities;
+
+d) You acknowledge that Patexia makes no warranties regarding the Software's 
+   compliance with specific privacy regulations.
+
+================================================================================
+6. TERM AND TERMINATION
+================================================================================
+
+This License is effective until terminated. This License will terminate 
+automatically without notice if you fail to comply with any provision hereof.
+
+Patexia may terminate this License at any time, with or without cause, upon 
+written notice to you.
+
+Upon termination of this License:
+
+a) All rights granted to you under this License shall immediately cease;
+b) You must immediately discontinue all use of the Software;
+c) You must delete or destroy all copies of the Software in your possession 
+   or control;
+d) You must return any confidential materials provided by Patexia;
+e) You must provide written certification of compliance with these obligations.
+
+Sections 3, 4, 7, 8, 9, 10, 11, and 12 shall survive termination of this License.
+
+================================================================================
+7. DISCLAIMER OF WARRANTIES
+================================================================================
+
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND. PATEXIA 
+DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO:
+
+- WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR 
+  NON-INFRINGEMENT
+- WARRANTIES THAT THE SOFTWARE WILL BE ERROR-FREE, UNINTERRUPTED, OR SECURE
+- WARRANTIES REGARDING THE ACCURACY, RELIABILITY, OR COMPLETENESS OF RESULTS
+- WARRANTIES THAT THE SOFTWARE WILL MEET YOUR SPECIFIC REQUIREMENTS
+
+YOU ASSUME ALL RISKS ASSOCIATED WITH THE USE OF THE SOFTWARE. PATEXIA DOES NOT 
+WARRANT THAT THE SOFTWARE WILL BE COMPATIBLE WITH YOUR SYSTEMS OR THAT ANY 
+DEFECTS WILL BE CORRECTED.
+
+================================================================================
+8. LIMITATION OF LIABILITY
+================================================================================
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL PATEXIA 
+BE LIABLE FOR ANY:
+
+a) INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES;
+b) DAMAGES FOR LOSS OF PROFITS, REVENUE, DATA, OR USE;
+c) DAMAGES RESULTING FROM INTERRUPTION OF BUSINESS OR LOSS OF GOODWILL;
+d) DAMAGES CAUSED BY YOUR RELIANCE ON THE SOFTWARE;
+
+WHETHER ARISING FROM CONTRACT, TORT, NEGLIGENCE, STRICT LIABILITY, OR OTHERWISE, 
+EVEN IF PATEXIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+PATEXIA'S TOTAL AGGREGATE LIABILITY ARISING OUT OF OR RELATED TO THIS LICENSE 
+SHALL NOT EXCEED ONE HUNDRED DOLLARS ($100), REGARDLESS OF THE FORM OF ACTION.
+
+================================================================================
+9. INDEMNIFICATION
+================================================================================
+
+You agree to indemnify, defend, and hold harmless Patexia, its officers, 
+directors, employees, agents, and affiliates from and against any and all 
+claims, damages, losses, costs, and expenses (including reasonable attorneys' 
+fees) arising out of or resulting from:
+
+a) Your use of the Software in violation of this License;
+b) Your breach of any representation, warranty, or covenant in this License;
+c) Your negligent or wrongful acts or omissions;
+d) Any third-party claims arising from your use of the Software;
+e) Your violation of any applicable laws or regulations.
+
+================================================================================
+10. LEGAL COMPLIANCE AND EXPORT CONTROL
+================================================================================
+
+You agree to comply with all applicable laws, regulations, and government 
+orders, including but not limited to:
+
+a) Export control laws and regulations of the United States and other applicable 
+   jurisdictions;
+b) Privacy and data protection laws;
+c) Intellectual property laws;
+d) Laws governing the legal profession and attorney-client privilege.
+
+The Software may be subject to export control laws. You agree not to export 
+or re-export the Software without obtaining required governmental approvals.
+
+================================================================================
+11. GOVERNING LAW AND JURISDICTION
+================================================================================
+
+This License shall be governed by and construed in accordance with the laws 
+of the State of California, without regard to its conflict of laws principles.
+
+Any disputes arising out of or relating to this License shall be subject to 
+the exclusive jurisdiction of the state and federal courts located in 
+San Francisco County, California. You consent to the personal jurisdiction 
+of such courts and waive any objection to venue therein.
+
+================================================================================
+12. GENERAL PROVISIONS
+================================================================================
+
+12.1 ENTIRE AGREEMENT: This License constitutes the entire agreement between 
+you and Patexia regarding the Software and supersedes all prior agreements, 
+understandings, and communications.
+
+12.2 AMENDMENTS: This License may only be amended by a written instrument 
+signed by an authorized representative of Patexia.
+
+12.3 SEVERABILITY: If any provision of this License is held to be invalid or 
+unenforceable, the remaining provisions shall remain in full force and effect.
+
+12.4 WAIVER: No waiver of any provision of this License shall be deemed or 
+shall constitute a waiver of any other provision.
+
+12.5 ASSIGNMENT: You may not assign or transfer your rights under this License 
+without prior written consent from Patexia. Patexia may assign this License 
+without restriction.
+
+12.6 NOTICES: All notices required under this License shall be in writing and 
+delivered to the parties at their respective addresses on file.
+
+12.7 FORCE MAJEURE: Neither party shall be liable for any delay or failure to 
+perform due to causes beyond its reasonable control.
+
+12.8 RELATIONSHIP: This License does not create any partnership, joint venture, 
+agency, or employment relationship between the parties.
+
+================================================================================
+13. CONTACT INFORMATION
+================================================================================
+
+For questions regarding this License or to request permissions, contact:
+
+Patexia, Inc.
+Legal Department
+[Address]
+Email: legal@patexia.com
+Phone: [Phone Number]
+
+For technical support inquiries (authorized users only):
+Email: support@patexia.com
+
+================================================================================
+ACKNOWLEDGMENT
+================================================================================
+
+BY USING THE SOFTWARE, YOU ACKNOWLEDGE THAT YOU HAVE READ THIS LICENSE, 
+UNDERSTAND ITS TERMS, AND AGREE TO BE BOUND BY ITS CONDITIONS. YOU FURTHER 
+ACKNOWLEDGE THAT THIS LICENSE IS THE COMPLETE AND EXCLUSIVE STATEMENT OF THE 
+AGREEMENT BETWEEN YOU AND PATEXIA REGARDING THE SOFTWARE.
+
+IF YOU ARE ACCEPTING THIS LICENSE ON BEHALF OF AN ORGANIZATION, YOU REPRESENT 
+AND WARRANT THAT YOU HAVE THE AUTHORITY TO BIND SUCH ORGANIZATION TO THE TERMS 
+OF THIS LICENSE.
+
+This License is effective as of the date you first access or use the Software.
+
+================================================================================
+© 2025 Patexia, Inc. All Rights Reserved.
+
+Last Updated: [Date]
+Version: 1.0
+================================================================================

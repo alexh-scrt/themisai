@@ -1,0 +1,612 @@
+# =============================================================================
+# Legal AI Chatbot - Docker Compose Configuration
+# =============================================================================
+#
+# This Docker Compose file orchestrates all services required for the Legal AI
+# Chatbot system including databases, AI models, and application services.
+#
+# Services:
+# - MongoDB: Document storage and metadata
+# - Weaviate: Vector database for embeddings
+# - Ollama: AI model management and serving
+# - Backend: FastAPI application server
+# - Frontend: Gradio web interface
+#
+# Hardware Requirements:
+# - NVIDIA GPU with 8GB+ VRAM (H100 recommended)
+# - 16GB+ System RAM
+# - 500GB+ Storage
+# - Ubuntu 24.04+ with Docker and NVIDIA Container Toolkit
+#
+# Quick Start:
+#   docker-compose up -d
+#   python scripts/pull_models.py
+#   python scripts/init_databases.py
+#
+# =============================================================================
+
+version: '3.8'
+
+# =============================================================================
+# SERVICES CONFIGURATION
+# =============================================================================
+services:
+
+  # ===========================================================================
+  # DOCUMENT DATABASE - MongoDB
+  # ===========================================================================
+  mongodb:
+    image: mongo:7.0
+    container_name: legal_ai_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      # Authentication
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD:-legal_ai_admin_password}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE:-patexia_legal_ai}
+      
+      # Performance tuning
+      MONGO_OPLOG_SIZE: 1024
+      
+    volumes:
+      # Persistent data storage
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      
+      # Backup directory
+      - ./data/backups:/backups
+      
+      # Custom configuration
+      - ./config/mongodb/mongod.conf:/etc/mongod.conf:ro
+      
+    command: mongod --config /etc/mongod.conf
+    
+    healthcheck:
+      test: |
+        mongosh --eval "
+          try {
+            db.adminCommand('ping');
+            print('MongoDB is healthy');
+          } catch (e) {
+            print('MongoDB health check failed');
+            quit(1);
+          }
+        "
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+      
+    # Resource limits
+    mem_limit: 4g
+    mem_reservation: 2g
+    cpus: 2.0
+    
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+        
+    networks:
+      - legal_ai_network
+
+  # ===========================================================================
+  # VECTOR DATABASE - Weaviate
+  # ===========================================================================
+  weaviate:
+    image: semitechnologies/weaviate:1.25.0
+    container_name: legal_ai_weaviate
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Core configuration
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      DEFAULT_VECTORIZER_MODULE: 'none'
+      CLUSTER_HOSTNAME: 'node1'
+      
+      # Performance optimization
+      ENABLE_MODULES: 'text2vec-transformers,text2vec-openai,generative-openai,ref2vec-centroid'
+      TRANSFORMERS_INFERENCE_API: 'http://t2v-transformers:8080'
+      
+      # Memory management
+      GOMEMLIMIT: 6GiB
+      GOGC: 100
+      
+      # Indexing configuration
+      ASYNC_INDEXING: 'true'
+      
+    volumes:
+      # Persistent vector storage
+      - weaviate_data:/var/lib/weaviate
+      
+      # Configuration
+      - ./config/weaviate:/weaviate/config:ro
+      
+    healthcheck:
+      test: wget --no-verbose --tries=3 --spider http://localhost:8080/v1/.well-known/ready || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+      
+    # Resource limits (optimized for H100 system)
+    mem_limit: 8g
+    mem_reservation: 4g
+    cpus: 4.0
+    
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+        
+    networks:
+      - legal_ai_network
+    
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  # ===========================================================================
+  # AI MODEL SERVER - Ollama
+  # ===========================================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: legal_ai_ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    environment:
+      # Server configuration
+      OLLAMA_HOST: "0.0.0.0"
+      OLLAMA_ORIGINS: "*"
+      
+      # Model management
+      OLLAMA_KEEP_ALIVE: "24h"
+      OLLAMA_NUM_PARALLEL: 4
+      OLLAMA_MAX_LOADED_MODELS: 3
+      
+      # Performance tuning
+      OLLAMA_MAX_QUEUE: 512
+      OLLAMA_PARALLEL: 4
+      
+      # GPU configuration
+      CUDA_VISIBLE_DEVICES: "0"
+      NVIDIA_VISIBLE_DEVICES: "all"
+      NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+      
+    volumes:
+      # Model storage
+      - ollama_data:/root/.ollama
+      
+      # Local model cache (optional)
+      - ./data/models:/models
+      
+      # Configuration
+      - ./config/ollama:/etc/ollama:ro
+      
+    healthcheck:
+      test: curl -f http://localhost:11434/api/version || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      
+    # GPU support (requires NVIDIA Container Toolkit)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+              
+    # Resource limits
+    mem_limit: 16g
+    mem_reservation: 8g
+    
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200m"
+        max-file: "5"
+        
+    networks:
+      - legal_ai_network
+
+  # ===========================================================================
+  # BACKEND API - FastAPI Application
+  # ===========================================================================
+  backend:
+    build:
+      context: .
+      dockerfile: config/docker/Dockerfile.backend
+      args:
+        - PYTHON_VERSION=3.13
+        - ENVIRONMENT=${ENVIRONMENT:-development}
+    container_name: legal_ai_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Application configuration
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DEBUG: ${DEBUG:-true}
+      RELOAD: ${RELOAD:-true}
+      
+      # Database connections
+      DB_MONGODB_URI: mongodb://${MONGODB_ROOT_USERNAME:-admin}:${MONGODB_ROOT_PASSWORD:-legal_ai_admin_password}@mongodb:27017
+      DB_MONGODB_DATABASE: ${MONGODB_DATABASE:-patexia_legal_ai}
+      DB_WEAVIATE_URL: http://weaviate:8080
+      
+      # Ollama configuration
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-mxbai-embed-large}
+      OLLAMA_FALLBACK_MODEL: ${OLLAMA_FALLBACK_MODEL:-nomic-embed-text}
+      
+      # Security
+      SECRET_KEY: ${SECRET_KEY:-your_secret_key_here_change_in_production}
+      
+      # Performance
+      WORKERS: ${APP_WORKERS:-1}
+      MAX_REQUESTS: 1000
+      MAX_REQUESTS_JITTER: 100
+      
+    volumes:
+      # Application code (development)
+      - ./backend:/app/backend:ro
+      - ./frontend:/app/frontend:ro
+      
+      # Configuration
+      - ./backend/config:/app/config
+      
+      # Logs
+      - ./logs:/app/logs
+      
+      # Uploads and temporary files
+      - ./data/uploads:/app/uploads
+      - ./data/temp:/app/temp
+      
+    healthcheck:
+      test: curl -f http://localhost:8000/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+      
+    # Resource limits
+    mem_limit: 4g
+    mem_reservation: 2g
+    cpus: 2.0
+    
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    user: "${UID:-1000}:${GID:-1000}"
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+        
+    networks:
+      - legal_ai_network
+      
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      weaviate:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+
+  # ===========================================================================
+  # FRONTEND UI - Gradio Interface
+  # ===========================================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: config/docker/Dockerfile.frontend
+      args:
+        - PYTHON_VERSION=3.13
+        - ENVIRONMENT=${ENVIRONMENT:-development}
+    container_name: legal_ai_frontend
+    restart: unless-stopped
+    ports:
+      - "7860:7860"
+    environment:
+      # Gradio configuration
+      GRADIO_SERVER_NAME: "0.0.0.0"
+      GRADIO_SERVER_PORT: 7860
+      GRADIO_SHARE: ${GRADIO_SHARE:-false}
+      GRADIO_DEBUG: ${GRADIO_DEBUG:-true}
+      
+      # Backend API connection
+      API_BASE_URL: http://backend:8000
+      WEBSOCKET_URL: ws://backend:8000
+      
+      # UI configuration
+      UI_TITLE: "Legal AI Chatbot"
+      UI_DESCRIPTION: "AI-powered legal document processing and search"
+      
+    volumes:
+      # Application code (development)
+      - ./frontend:/app/frontend:ro
+      
+      # Assets and static files
+      - ./frontend/assets:/app/assets
+      
+      # Configuration
+      - ./frontend/config:/app/config:ro
+      
+      # Logs
+      - ./logs:/app/logs
+      
+    healthcheck:
+      test: curl -f http://localhost:7860 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+      
+    # Resource limits
+    mem_limit: 2g
+    mem_reservation: 1g
+    cpus: 1.0
+    
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    user: "${UID:-1000}:${GID:-1000}"
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+        
+    networks:
+      - legal_ai_network
+      
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # ===========================================================================
+  # FUTURE: GRAPH DATABASE - Neo4j (Phase 2)
+  # ===========================================================================
+  # neo4j:
+  #   image: neo4j:5.15-community
+  #   container_name: legal_ai_neo4j
+  #   restart: unless-stopped
+  #   ports:
+  #     - "7474:7474"  # HTTP
+  #     - "7687:7687"  # Bolt
+  #   environment:
+  #     NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-legal_ai_neo4j_password}
+  #     NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
+  #     NEO4J_apoc_export_file_enabled: 'true'
+  #     NEO4J_apoc_import_file_enabled: 'true'
+  #     NEO4J_dbms_security_procedures_unrestricted: 'apoc.*,gds.*'
+  #     NEO4J_dbms_memory_heap_initial_size: 1G
+  #     NEO4J_dbms_memory_heap_max_size: 2G
+  #     NEO4J_dbms_memory_pagecache_size: 1G
+  #   volumes:
+  #     - neo4j_data:/data
+  #     - neo4j_logs:/logs
+  #     - ./config/neo4j:/conf:ro
+  #   networks:
+  #     - legal_ai_network
+
+  # ===========================================================================
+  # DEVELOPMENT: MONITORING & UTILITIES
+  # ===========================================================================
+  # Uncomment for development monitoring
+  
+  # adminer:
+  #   image: adminer:4.8.1
+  #   container_name: legal_ai_adminer
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8081:8080"
+  #   environment:
+  #     ADMINER_DEFAULT_SERVER: mongodb
+  #   networks:
+  #     - legal_ai_network
+  #   profiles:
+  #     - development
+
+# =============================================================================
+# NETWORKS CONFIGURATION
+# =============================================================================
+networks:
+  legal_ai_network:
+    driver: bridge
+    name: legal_ai_network
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+    driver_opts:
+      com.docker.network.bridge.enable_ip_masquerade: 'true'
+      com.docker.network.bridge.enable_icc: 'true'
+      com.docker.network.driver.mtu: 1500
+
+# =============================================================================
+# VOLUMES CONFIGURATION
+# =============================================================================
+volumes:
+  # Database storage
+  mongodb_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/mongodb
+  
+  mongodb_config:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/mongodb_config
+  
+  weaviate_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/weaviate
+  
+  ollama_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/ollama
+  
+  # Future: Neo4j storage (Phase 2)
+  # neo4j_data:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     o: bind
+  #     device: ./data/neo4j
+  
+  # neo4j_logs:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     o: bind
+  #     device: ./data/neo4j_logs
+
+# =============================================================================
+# CONFIGURATION OVERRIDES
+# =============================================================================
+# Use docker-compose.override.yml for local development customizations
+# Example override file content:
+#
+# version: '3.8'
+# services:
+#   backend:
+#     environment:
+#       DEBUG: true
+#       LOG_LEVEL: DEBUG
+#     volumes:
+#       - ./backend:/app/backend:cached  # For macOS performance
+#   
+#   frontend:
+#     environment:
+#       GRADIO_DEBUG: true
+#     volumes:
+#       - ./frontend:/app/frontend:cached
+#
+#   ollama:
+#     environment:
+#       OLLAMA_DEBUG: 1
+
+# =============================================================================
+# DEPLOYMENT PROFILES
+# =============================================================================
+# Production profile (use with: docker-compose --profile production up)
+# - Removes development volumes
+# - Optimizes resource allocation
+# - Enables production logging
+# - Disables debug modes
+
+# Development profile (default)
+# - Enables code mounting for hot reload
+# - Includes development utilities
+# - Enhanced logging and debugging
+# - Performance profiling tools
+
+# =============================================================================
+# USAGE INSTRUCTIONS
+# =============================================================================
+#
+# 1. INITIAL SETUP:
+#    cp .env.example .env
+#    # Edit .env with your configuration
+#    docker-compose up -d
+#
+# 2. INITIALIZE SYSTEM:
+#    python scripts/setup_environment.py
+#    python scripts/pull_models.py
+#    python scripts/init_databases.py
+#
+# 3. VERIFY SERVICES:
+#    docker-compose ps
+#    docker-compose logs -f
+#
+# 4. ACCESS SERVICES:
+#    - Frontend UI: http://localhost:7860
+#    - Backend API: http://localhost:8000
+#    - API Docs: http://localhost:8000/docs
+#    - Weaviate: http://localhost:8080
+#    - MongoDB: mongodb://localhost:27017
+#
+# 5. STOP SERVICES:
+#    docker-compose down
+#
+# 6. CLEANUP (removes all data):
+#    docker-compose down -v
+#    docker system prune -a
+#
+# =============================================================================
+# TROUBLESHOOTING
+# =============================================================================
+#
+# 1. GPU NOT DETECTED:
+#    - Verify NVIDIA drivers: nvidia-smi
+#    - Check Container Toolkit: docker run --gpus all nvidia/cuda:12.0-base nvidia-smi
+#    - Restart Docker daemon
+#
+# 2. SERVICE STARTUP FAILURES:
+#    - Check logs: docker-compose logs [service_name]
+#    - Verify environment variables: docker-compose config
+#    - Check resource limits: docker stats
+#
+# 3. NETWORK CONNECTIVITY ISSUES:
+#    - Verify network: docker network ls
+#    - Check service discovery: docker-compose exec backend ping weaviate
+#    - Review firewall settings
+#
+# 4. PERFORMANCE ISSUES:
+#    - Monitor resources: docker stats
+#    - Check GPU utilization: nvidia-smi
+#    - Review service logs for bottlenecks
+#
+# 5. DATA PERSISTENCE ISSUES:
+#    - Verify volume mounts: docker volume ls
+#    - Check directory permissions: ls -la data/
+#    - Ensure sufficient disk space: df -h
+#
+# =============================================================================
