@@ -166,7 +166,6 @@ def setup_logging(
     processors = [
         structlog.contextvars.merge_contextvars,
         structlog.processors.add_log_level,
-        structlog.processors.add_logger_name,
         TimestampProcessor(),
     ]
     

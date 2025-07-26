@@ -46,12 +46,12 @@ import PyPDF2
 import pdfplumber
 from llama_index.readers.file import PDFReader as LlamaPDFReader
 
-from ..core.config import get_settings
+from config.settings import get_settings
 from ..core.websocket_manager import WebSocketManager
 from ..models.domain.document import DocumentType, LegalDocument
 from ..utils.logging import get_logger
 from ..utils.file_utils import validate_file_path, get_file_size, calculate_file_hash
-from ..exceptions import (
+from ..core.exceptions import (
     DocumentProcessingError,
     ErrorCode,
     ValidationError

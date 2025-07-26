@@ -22,17 +22,17 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 from weaviate.exceptions import WeaviateBaseError
 
-from backend.app.core.exceptions import (
+from .exceptions import (
     DatabaseError,
     ErrorCode,
     raise_database_error
 )
-from backend.app.utils.logging import (
+from ..utils.logging import (
     database_logger,
     get_logger,
     performance_context
 )
-from backend.config.settings import get_settings
+from config.settings import get_settings
 
 logger = get_logger(__name__)
 

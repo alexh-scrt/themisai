@@ -94,7 +94,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
 
 try:
     from backend.app.utils.logging import setup_logging
-    from backend.app.core.config import get_settings
+    from backend.config.settings import get_settings
     BACKEND_AVAILABLE = True
 except ImportError:
     BACKEND_AVAILABLE = False

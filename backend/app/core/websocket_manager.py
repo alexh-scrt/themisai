@@ -59,7 +59,7 @@ from pydantic import BaseModel, Field
 import asyncio
 
 from ..utils.logging import get_logger
-from ..exceptions import ConnectionError, ErrorCode
+from .exceptions import WebSocketError, ErrorCode
 
 logger = get_logger(__name__)
 

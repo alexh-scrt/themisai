@@ -63,22 +63,22 @@ backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 
 # Import application components
-from app.api.routes import cases, documents, search, admin, websocket
-from app.api.middleware.cors import setup_cors_middleware
-from app.api.middleware.logging import LoggingMiddleware
+from backend.app.api.routes import cases, documents, search, admin, websocket
+from backend.app.api.middleware.cors import setup_cors_middleware
+from backend.app.api.middleware.logging import LoggingMiddleware
 from app.api.middleware.error_handler import ErrorHandlerMiddleware
-from app.core.config import get_settings
-from app.core.config_watcher import ConfigurationWatcher
-from app.core.database import DatabaseManager, get_database_manager
-from app.core.websocket_manager import WebSocketManager, get_websocket_manager
-from app.core.resource_monitor import ResourceMonitor, get_resource_monitor
-from app.core.ollama_client import OllamaClient, get_ollama_client
-from app.exceptions import (
+from backend.config.settings import get_settings
+from backend.app.core.config_watcher import ConfigurationWatcher
+from backend.app.core.database import DatabaseManager, get_database_manager
+from backend.app.core.websocket_manager import WebSocketManager, get_websocket_manager
+from backend.app.core.resource_monitor import ResourceMonitor, get_resource_monitor
+from backend.app.core.ollama_client import OllamaClient, get_ollama_client
+from backend.app.core.exceptions import (
     BaseCustomException, ErrorCode, ConfigurationError,
     DatabaseError, get_exception_response_data
 )
-from app.utils.logging import get_logger, initialize_logging_from_settings
-from app.utils.security import SecurityHeaders
+from backend.app.utils.logging import get_logger, initialize_logging_from_settings
+from backend.app.utils.security import SecurityHeaders
 
 # Initialize logging as early as possible
 initialize_logging_from_settings()

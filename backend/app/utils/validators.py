@@ -59,8 +59,8 @@ import email.utils
 
 from pydantic import BaseModel, Field, validator, ValidationError as PydanticValidationError
 
-from ..core.config import get_settings
-from ..exceptions import (
+from config.settings import get_settings
+from ..core.exceptions import (
     ValidationError, ErrorCode, CaseManagementError, DocumentProcessingError,
     raise_validation_error, raise_case_error, raise_document_error
 )

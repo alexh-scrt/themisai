@@ -15,14 +15,14 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Set
 from dataclasses import dataclass, field
 
-from backend.app.core.exceptions import (
+from ...core.exceptions import (
     CaseManagementError,
     ErrorCode,
     raise_case_error,
     raise_capacity_error
 )
-from backend.app.utils.logging import get_logger
-from backend.config.settings import get_settings
+from ...utils.logging import get_logger
+from config.settings import get_settings
 
 logger = get_logger(__name__)
 

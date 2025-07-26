@@ -65,8 +65,8 @@ from enum import Enum
 import gzip
 import base64
 
-from ..core.config import get_settings
-from ..exceptions import (
+from config.settings import get_settings
+from ..core.exceptions import (
     ValidationError, SecurityError, FileProcessingError,
     ErrorCode, raise_validation_error, raise_security_error, raise_file_error
 )

@@ -53,7 +53,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from collections import defaultdict
 
-from ..core.config import get_settings
+from config.settings import get_settings
 from ..models.api.search_schemas import (
     SearchRequest, SearchResponse, SearchResultItem, SearchHighlight,
     CitationSearchRequest, SearchHistoryEntry, SearchType, SearchScope,
@@ -66,7 +66,7 @@ from ..repositories.mongodb.document_repository import DocumentRepository
 from ..repositories.mongodb.search_history_repository import SearchHistoryRepository
 from ..services.embedding_service import EmbeddingService
 from ..services.notification_service import NotificationService
-from ..exceptions import (
+from ..core.exceptions import (
     SearchError, ValidationError, AccessError, PerformanceError,
     ErrorCode, raise_search_error, raise_validation_error, raise_access_error
 )

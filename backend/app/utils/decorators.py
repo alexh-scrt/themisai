@@ -54,9 +54,9 @@ import weakref
 from cachetools import TTLCache, LRUCache
 from pydantic import BaseModel, ValidationError as PydanticValidationError
 
-from ..core.config import get_settings
+from config.settings import get_settings
 from ..core.websocket_manager import WebSocketManager
-from ..exceptions import (
+from ..core.exceptions import (
     BaseCustomException, ErrorCode, ValidationError, ResourceError,
     DatabaseError, ConfigurationError, ModelError, CaseManagementError,
     is_retryable_error, get_retry_delay

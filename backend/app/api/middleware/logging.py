@@ -43,7 +43,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from ...core.config import get_settings
+from config.settings import get_settings
 from ...utils.logging import (
     get_logger,
     set_correlation_id,

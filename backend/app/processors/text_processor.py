@@ -36,10 +36,10 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple, Set, Pattern
 from enum import Enum
 
-from ..core.config import get_settings
+from config.settings import get_settings
 from ..models.domain.document import DocumentChunk, DocumentType
 from ..utils.logging import get_logger
-from ..exceptions import DocumentProcessingError, ErrorCode
+from ..core.exceptions import DocumentProcessingError, ErrorCode
 
 logger = get_logger(__name__)
 

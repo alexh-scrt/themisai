@@ -49,8 +49,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response as StarletteResponse
 from starlette.types import ASGIApp
 
-from ...core.config import get_settings
-from ...utils.logging import get_logger
+from backend.config.settings import get_settings
+from backend.app.utils.logging import get_logger
 
 logger = get_logger(__name__)
 

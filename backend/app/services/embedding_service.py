@@ -49,11 +49,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 import numpy as np
 
-from ..core.config import get_settings
+from config.settings import get_settings
 from ..core.ollama_client import OllamaClient, get_ollama_client
 from ..core.websocket_manager import WebSocketManager
 from ..models.domain.document import DocumentChunk
-from ..exceptions import (
+from ..core.exceptions import (
     EmbeddingError, ModelError, ValidationError, ResourceError,
     ErrorCode, raise_embedding_error, raise_model_error, raise_validation_error
 )

@@ -51,7 +51,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from collections import defaultdict, deque
 
-from ..core.config import get_settings
+from config.settings import get_settings
 from ..models.domain.document import LegalDocument
 from ..processors.relationship_extractor import (
     RelationshipExtractor, DocumentRelationship, RelationshipType,
@@ -61,7 +61,7 @@ from ..repositories.neo4j.relationship_repository import RelationshipRepository
 from ..repositories.mongodb.document_repository import DocumentRepository
 from ..services.notification_service import NotificationService
 from ..tasks.document_tasks import DocumentTaskManager, TaskType, TaskStatus, TaskPriority
-from ..exceptions import (
+from ..core.exceptions import (
     RelationshipExtractionError, TaskError, DatabaseError,
     ErrorCode, raise_relationship_error, raise_task_error
 )

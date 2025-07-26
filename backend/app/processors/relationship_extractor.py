@@ -53,14 +53,14 @@ from pathlib import Path
 from neo4j import AsyncGraphDatabase, AsyncSession
 from neo4j.exceptions import ServiceUnavailable, TransientError
 
-from ..core.config import get_settings
+from config.settings import get_settings
 from ..core.ollama_client import OllamaClient
 from ..core.websocket_manager import WebSocketManager
 from ..models.domain.document import LegalDocument, DocumentChunk
 from ..repositories.mongodb.document_repository import DocumentRepository
 from ..repositories.neo4j.relationship_repository import RelationshipRepository
 from ..utils.logging import get_logger
-from ..exceptions import (
+from ..core.exceptions import (
     RelationshipExtractionError,
     ErrorCode,
     DatabaseError

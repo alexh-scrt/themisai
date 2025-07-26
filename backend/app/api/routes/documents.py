@@ -70,7 +70,7 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from ...core.config import get_settings
+from config.settings import get_settings
 from ...core.websocket_manager import WebSocketManager, get_websocket_manager
 from ...services.document_service import DocumentService, DocumentOperationResult
 from ...services.case_service import CaseService
@@ -101,7 +101,7 @@ from ...utils.logging import (
     log_route_exit,
     log_document_processing
 )
-from ...exceptions import (
+from ...core.exceptions import (
     DocumentProcessingError,
     CaseManagementError,
     ValidationError,

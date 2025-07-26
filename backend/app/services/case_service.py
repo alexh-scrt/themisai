@@ -47,7 +47,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 from dataclasses import dataclass
 from enum import Enum
 
-from ..core.config import get_settings
+from config.settings import get_settings
 from ..core.websocket_manager import WebSocketManager
 from ..core.database import get_database_manager
 from ..models.domain.case import (
@@ -59,7 +59,7 @@ from ..models.api.case_schemas import (
 )
 from ..repositories.mongodb.case_repository import CaseRepository
 from ..repositories.weaviate.vector_repository import VectorRepository
-from ..exceptions import (
+from ..core.exceptions import (
     CaseManagementError, ValidationError, ResourceError,
     ErrorCode, raise_case_error, raise_validation_error, raise_resource_error
 )

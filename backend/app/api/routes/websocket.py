@@ -66,7 +66,7 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 
-from ...core.config import get_settings
+from config.settings import get_settings
 from ...core.websocket_manager import (
     WebSocketManager,
     ConnectionState,
@@ -84,7 +84,7 @@ from ...utils.logging import (
     websocket_logger,
     set_correlation_id
 )
-from ...exceptions import (
+from ...core.exceptions import (
     ConnectionError,
     ValidationError,
     ErrorCode

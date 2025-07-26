@@ -41,12 +41,12 @@ from enum import Enum
 import numpy as np
 from cachetools import TTLCache, LRUCache
 
-from ..core.config import get_settings
+from config.settings import get_settings
 from ..core.ollama_client import OllamaClient
 from ..core.websocket_manager import WebSocketManager
 from ..models.domain.document import DocumentChunk
 from ..utils.logging import get_logger
-from ..exceptions import (
+from ..core.exceptions import (
     ModelError,
     ConfigurationError,
     EmbeddingError,

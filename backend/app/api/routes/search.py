@@ -64,7 +64,7 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 
-from ...core.config import get_settings
+from config.settings import get_settings
 from ...core.websocket_manager import WebSocketManager, get_websocket_manager
 from ...services.search_service import SearchService, SearchOperationResult
 from ...services.case_service import CaseService
@@ -93,7 +93,7 @@ from ...utils.logging import (
     log_route_exit,
     log_search_query
 )
-from ...exceptions import (
+from ...core.exceptions import (
     SearchError,
     CaseManagementError,
     ValidationError,

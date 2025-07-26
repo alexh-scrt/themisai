@@ -55,7 +55,7 @@ import tempfile
 import aiofiles
 import mimetypes
 
-from ..core.config import get_settings
+from config.settings import get_settings
 from ..core.websocket_manager import WebSocketManager
 from ..models.domain.document import (
     LegalDocument, DocumentType, ProcessingStatus, DocumentPriority,
@@ -70,7 +70,7 @@ from ..processors.document_processor import DocumentProcessor
 from ..repositories.mongodb.document_repository import DocumentRepository
 from ..repositories.weaviate.vector_repository import VectorRepository
 from ..services.embedding_service import EmbeddingService
-from ..exceptions import (
+from ..core.exceptions import (
     DocumentProcessingError, ValidationError, ResourceError, StorageError,
     ErrorCode, raise_document_error, raise_validation_error, raise_resource_error
 )

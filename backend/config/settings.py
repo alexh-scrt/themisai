@@ -13,8 +13,8 @@ import json
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
-from pydantic import BaseSettings, Field, validator
-from pydantic.env_settings import SettingsSourceCallable
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, field_validator
 
 
 logger = logging.getLogger(__name__)
@@ -62,8 +62,7 @@ class OllamaSettings(BaseSettings):
         description="GPU memory allocation limit"
     )
     
-    class Config:
-        env_prefix = "OLLAMA_"
+    model_config = SettingsConfigDict(env_prefix="OLLAMA_", extra='ignore')
 
 
 class LlamaIndexSettings(BaseSettings):
@@ -104,8 +103,7 @@ class LlamaIndexSettings(BaseSettings):
         description="Minimum similarity score for search results"
     )
     
-    class Config:
-        env_prefix = "LLAMAINDEX_"
+    model_config = SettingsConfigDict(env_prefix="LLAMAINDEX_", extra='ignore')
 
 
 class LegalDocumentSettings(BaseSettings):
@@ -131,8 +129,7 @@ class LegalDocumentSettings(BaseSettings):
         description="Enhance document metadata with legal-specific information"
     )
     
-    class Config:
-        env_prefix = "LEGAL_"
+    model_config = SettingsConfigDict(env_prefix="LEGAL_", extra='ignore')
 
 
 class UISettings(BaseSettings):
@@ -166,8 +163,7 @@ class UISettings(BaseSettings):
         description="Number of surrounding sentences for search result highlighting"
     )
     
-    class Config:
-        env_prefix = "UI_"
+    model_config = SettingsConfigDict(env_prefix="UI_", extra='ignore')
 
 
 class CapacityLimitSettings(BaseSettings):
@@ -199,8 +195,7 @@ class CapacityLimitSettings(BaseSettings):
         description="Number of embeddings to cache in memory"
     )
     
-    class Config:
-        env_prefix = "CAPACITY_"
+    model_config = SettingsConfigDict(env_prefix="CAPACITY_", extra='ignore')
 
 
 class DatabaseSettings(BaseSettings):
@@ -241,8 +236,7 @@ class DatabaseSettings(BaseSettings):
         description="Neo4j password"
     )
     
-    class Config:
-        env_prefix = "DB_"
+    model_config = SettingsConfigDict(env_prefix="DB_", extra='ignore')
 
 
 class LoggingSettings(BaseSettings):
@@ -268,11 +262,10 @@ class LoggingSettings(BaseSettings):
         description="Log database queries for debugging"
     )
     
-    class Config:
-        env_prefix = "LOG_"
+    model_config = SettingsConfigDict(env_prefix="LOG_", extra='ignore')
 
 
-def json_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
+def json_config_settings_source() -> Dict[str, Any]:
     """
     Load configuration from JSON files with layered override support.
     
@@ -353,49 +346,56 @@ class Settings(BaseSettings):
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     
-    @validator('ollama', pre=True)
+    @field_validator('ollama', mode='before')
+    @classmethod
     def parse_ollama_settings(cls, v):
         """Parse ollama settings from nested configuration."""
         if isinstance(v, dict):
             return OllamaSettings(**v)
         return v
     
-    @validator('llamaindex', pre=True)
+    @field_validator('llamaindex', mode='before')
+    @classmethod
     def parse_llamaindex_settings(cls, v):
         """Parse llamaindex settings from nested configuration."""
         if isinstance(v, dict):
             return LlamaIndexSettings(**v)
         return v
     
-    @validator('legal_documents', pre=True)
+    @field_validator('legal_documents', mode='before')
+    @classmethod
     def parse_legal_documents_settings(cls, v):
         """Parse legal documents settings from nested configuration."""
         if isinstance(v, dict):
             return LegalDocumentSettings(**v)
         return v
     
-    @validator('ui', pre=True)
+    @field_validator('ui', mode='before')
+    @classmethod
     def parse_ui_settings(cls, v):
         """Parse UI settings from nested configuration."""
         if isinstance(v, dict):
             return UISettings(**v)
         return v
     
-    @validator('capacity_limits', pre=True)
+    @field_validator('capacity_limits', mode='before')
+    @classmethod
     def parse_capacity_limits_settings(cls, v):
         """Parse capacity limits settings from nested configuration."""
         if isinstance(v, dict):
             return CapacityLimitSettings(**v)
         return v
     
-    @validator('database', pre=True)
+    @field_validator('database', mode='before')
+    @classmethod
     def parse_database_settings(cls, v):
         """Parse database settings from nested configuration."""
         if isinstance(v, dict):
             return DatabaseSettings(**v)
         return v
     
-    @validator('logging', pre=True)
+    @field_validator('logging', mode='before')
+    @classmethod
     def parse_logging_settings(cls, v):
         """Parse logging settings from nested configuration."""
         if isinstance(v, dict):
@@ -408,13 +408,13 @@ class Settings(BaseSettings):
             "app_name": self.app_name,
             "app_version": self.app_version,
             "debug": self.debug,
-            "ollama": self.ollama.dict(),
-            "llamaindex": self.llamaindex.dict(),
-            "legal_documents": self.legal_documents.dict(),
-            "ui": self.ui.dict(),
-            "capacity_limits": self.capacity_limits.dict(),
-            "database": self.database.dict(),
-            "logging": self.logging.dict(),
+            "ollama": self.ollama.model_dump(),
+            "llamaindex": self.llamaindex.model_dump(),
+            "legal_documents": self.legal_documents.model_dump(),
+            "ui": self.ui.model_dump(),
+            "capacity_limits": self.capacity_limits.model_dump(),
+            "database": self.database.model_dump(),
+            "logging": self.logging.model_dump(),
         }
     
     def validate_ollama_model_availability(self) -> bool:
@@ -447,30 +447,34 @@ class Settings(BaseSettings):
             logger.error(f"Failed to save runtime configuration: {e}")
             return False
     
-    class Config:
-        env_prefix = ""
-        case_sensitive = False
+    model_config = SettingsConfigDict(
+        env_prefix="",
+        case_sensitive=False,
+        extra='ignore'
+    )
+    
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls,
+        init_settings,
+        env_settings,
+        dotenv_settings,
+        file_secret_settings,
+    ):
+        """
+        Define the order of configuration sources.
         
-        @classmethod
-        def customise_sources(
-            cls,
-            init_settings: SettingsSourceCallable,
-            env_settings: SettingsSourceCallable,
-            file_secret_settings: SettingsSourceCallable,
-        ) -> tuple[SettingsSourceCallable, ...]:
-            """
-            Define the order of configuration sources.
-            
-            Priority order (highest to lowest):
-            1. Environment variables
-            2. JSON configuration files (layered)
-            3. Default values
-            """
-            return (
-                env_settings,
-                json_config_settings_source,
-                init_settings,
-            )
+        Priority order (highest to lowest):
+        1. Environment variables
+        2. JSON configuration files (layered)
+        3. Default values
+        """
+        return (
+            env_settings,
+            json_config_settings_source,
+            init_settings,
+        )
 
 
 # Global settings instance for application use
@@ -530,6 +534,7 @@ def update_runtime_setting(section: str, key: str, value: Any) -> bool:
     Returns:
         bool: True if update was successful, False otherwise
     """
+    global settings
     try:
         # Get current settings as dict
         current_config = settings.to_dict()
@@ -549,7 +554,6 @@ def update_runtime_setting(section: str, key: str, value: Any) -> bool:
             # Save to runtime config file
             if new_settings.save_runtime_config():
                 # Update global settings
-                global settings
                 settings = new_settings
                 logger.info(f"Updated {section}.{key} = {value}")
                 return True

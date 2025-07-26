@@ -55,11 +55,11 @@ from enum import Enum
 import uuid
 from collections import defaultdict, deque
 
-from ..core.config import get_settings
+from config.settings import get_settings
 from ..core.websocket_manager import WebSocketManager, MessagePriority
 from ..models.domain.document import DocumentChunk, ProcessingStatus
 from ..models.domain.case import LegalCase, CaseStatus
-from ..exceptions import (
+from ..core.exceptions import (
     NotificationError, ValidationError, DeliveryError,
     ErrorCode, raise_notification_error, raise_validation_error
 )

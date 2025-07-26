@@ -69,8 +69,8 @@ from ...core.exceptions import (
     ModelError, WebSocketError, AuthenticationError, ResourceError,
     ValidationError as CustomValidationError
 )
-from ...core.config import get_settings
-from ...utils.logging import get_logger
+from backend.config.settings import get_settings
+from backend.app.utils.logging import get_logger
 
 
 class ErrorSeverity(str, Enum):

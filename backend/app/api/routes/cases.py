@@ -57,7 +57,7 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 
-from ...core.config import get_settings
+from config.settings import get_settings
 from ...core.websocket_manager import WebSocketManager, get_websocket_manager
 from ...services.case_service import CaseService, CaseOperation, CaseOperationResult
 from ...models.api.case_schemas import (
@@ -81,7 +81,7 @@ from ...utils.logging import (
     log_route_entry,
     log_route_exit
 )
-from ...exceptions import (
+from ...core.exceptions import (
     CaseManagementError,
     ValidationError,
     ResourceError,

@@ -52,14 +52,14 @@ from neo4j.exceptions import (
     DatabaseError as Neo4jDatabaseError
 )
 
-from ...core.config import get_settings
+from config.settings import get_settings
 from ...models.domain.document import LegalDocument
 from ...processors.relationship_extractor import (
     DocumentRelationship, RelationshipType, ExtractionMethod,
     RelationshipEvidence
 )
 from ...utils.logging import get_logger
-from ...exceptions import (
+from ...core.exceptions import (
     DatabaseError, RelationshipError, ErrorCode
 )
 

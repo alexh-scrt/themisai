@@ -55,14 +55,14 @@ from dataclasses import dataclass, field
 from enum import Enum
 import copy
 
-from ..core.config import get_settings, Settings
+from config.settings import get_settings, Settings
 from ..core.config_watcher import (
     ConfigurationWatcher, ConfigChange, ConfigChangeType, 
     ConfigSection, ValidationResult
 )
 from ..core.websocket_manager import WebSocketManager
 from ..core.ollama_client import get_ollama_client
-from ..exceptions import (
+from ..core.exceptions import (
     ConfigurationError, ValidationError, ServiceError,
     ErrorCode, raise_configuration_error, raise_validation_error
 )

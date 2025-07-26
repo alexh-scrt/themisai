@@ -67,8 +67,8 @@ import jwt
 from passlib.context import CryptContext
 from passlib.hash import argon2
 
-from ..core.config import get_settings
-from ..exceptions import (
+from config.settings import get_settings
+from ..core.exceptions import (
     BaseCustomException, ErrorCode, ValidationError,
     raise_validation_error, raise_resource_error
 )

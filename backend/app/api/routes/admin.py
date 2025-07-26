@@ -53,7 +53,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
 from pydantic import BaseModel, Field, validator
 
-from ...core.config import get_settings
+from config.settings import get_settings
 from ...core.websocket_manager import WebSocketManager, get_websocket_manager
 from ...core.resource_monitor import ResourceMonitor, get_resource_monitor
 from ...services.config_service import (
@@ -70,7 +70,7 @@ from ...utils.logging import (
     log_business_event,
     set_correlation_id
 )
-from ...exceptions import (
+from ...core.exceptions import (
     ConfigurationError,
     ValidationError,
     ResourceError,

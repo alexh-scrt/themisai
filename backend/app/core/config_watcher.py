@@ -58,10 +58,10 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileModifiedEvent
 from pydantic import ValidationError
 
-from .config import get_settings, Settings
+from config.settings import get_settings, Settings
 from .websocket_manager import WebSocketManager
 from ..utils.logging import get_logger
-from ..exceptions import ConfigurationError, ErrorCode
+from .exceptions import ConfigurationError, ErrorCode
 
 logger = get_logger(__name__)
 

@@ -53,7 +53,7 @@ from llama_index.core.extractors import (
 from llama_index.readers.file import PDFReader
 from llama_index.vector_stores.weaviate import WeaviateVectorStore
 
-from ..core.config import get_settings
+from config.settings import get_settings
 from ..core.ollama_client import OllamaEmbeddingService
 from ..core.websocket_manager import WebSocketManager
 from ..models.domain.document import (
@@ -67,7 +67,7 @@ from ..repositories.weaviate.vector_repository import VectorRepository
 from ..repositories.mongodb.document_repository import DocumentRepository
 from ..utils.logging import get_logger
 from ..utils.validators import validate_file_type, validate_file_size
-from ..exceptions import (
+from ..core.exceptions import (
     DocumentProcessingError,
     ErrorCode,
     ConfigurationError,
