@@ -1,0 +1,19 @@
+Which file should I generate next?
+Here are the logical next candidates:
+
+backend/app/core/websocket_manager.py - WebSocket connection pooling for real-time updates
+backend/app/models/api/case_schemas.py - Pydantic API schemas for cases
+backend/app/repositories/mongodb/case_repository.py - Case data persistence layer
+backend/app/processors/document_processor.py - LlamaIndex document processing pipeline
+
+
+
+Prompt:
+Let's begin generating code for the core classes of the project. 
+We will generate one python file at a time then stop and ask if we want to continue.
+Any file should less that 1000 lines of code. 
+If the contents of a file may exceed 1000 lines we need break down the structure of a class so that it can be expressed in under 1000 lines of code. 
+If a structure is complex - define super classes with their functionality that each does not exceed 1000 lines. 
+
+Analyze the project structure in github, learn and understand the architecture documented in detail in docs/ folder, and identify the very base classes that we need to implement, follow the rule of 1000 lines max per file, and let's start writing one file at a time. 
+When we finish writing one file, pause and ask which file to generate next.
