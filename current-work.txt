@@ -21,4 +21,4 @@ Do not offer to write code for files that have already been implemented (referen
 
 When we finish writing one file, pause and ask which file to generate next.
 
-class to generate: backend/app/services/document_service.py
+class to generate next: frontend/components/search_pane.py
