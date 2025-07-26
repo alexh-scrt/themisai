@@ -1,0 +1,191 @@
+themisai/  # we are here
+├── README.md
+├── LICENSE
+├── .gitignore
+├── .env.example
+├── .dockerignore
+├── docker-compose.yml
+├── requirements.txt
+├── requirements-dev.txt
+├── pyproject.toml
+├── Makefile
+│
+├── backend/
+│   ├── __init__.py
+│   ├── main.py                     # FastAPI application entry point
+│   ├── config/
+│   │   ├── __init__.py
+│   │   ├── settings.py             # Pydantic settings with hot-reload
+│   │   ├── base_config.json        # Default configuration
+│   │   ├── development_config.json # Development overrides
+│   │   └── runtime_config.json     # Hot-reloadable parameters
+│   │
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── api/
+│   │   │   ├── __init__.py
+│   │   │   ├── deps.py             # Dependency injection
+│   │   │   ├── routes/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── cases.py        # Case management endpoints
+│   │   │   │   ├── documents.py    # Document upload/processing
+│   │   │   │   ├── search.py       # Search and query endpoints
+│   │   │   │   ├── admin.py        # Admin configuration
+│   │   │   │   └── websocket.py    # WebSocket endpoints
+│   │   │   └── middleware/
+│   │   │       ├── __init__.py
+│   │   │       ├── cors.py         # CORS configuration
+│   │   │       ├── logging.py      # Request logging
+│   │   │       └── error_handler.py # Global error handling
+│   │   │
+│   │   ├── core/
+│   │   │   ├── __init__.py
+│   │   │   ├── database.py         # Database connections
+│   │   │   ├── ollama_client.py    # Ollama API client
+│   │   │   ├── websocket_manager.py # WebSocket connection pool
+│   │   │   ├── config_watcher.py   # Hot-reload configuration
+│   │   │   ├── resource_monitor.py # System resource monitoring
+│   │   │   └── exceptions.py       # Custom exceptions
+│   │   │
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── database/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── case.py         # MongoDB case model
+│   │   │   │   ├── document.py     # MongoDB document model
+│   │   │   │   └── search_history.py # Search history model
+│   │   │   ├── api/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── case_schemas.py # Pydantic API schemas
+│   │   │   │   ├── document_schemas.py
+│   │   │   │   ├── search_schemas.py
+│   │   │   │   └── admin_schemas.py
+│   │   │   └── domain/
+│   │   │       ├── __init__.py
+│   │   │       ├── case.py         # Business logic models
+│   │   │       ├── document.py
+│   │   │       └── search_result.py
+│   │   │
+│   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   ├── case_service.py     # Case management business logic
+│   │   │   ├── document_service.py # Document processing pipeline
+│   │   │   ├── search_service.py   # Search and retrieval logic
+│   │   │   ├── embedding_service.py # Ollama embedding operations
+│   │   │   ├── config_service.py   # Configuration management
+│   │   │   └── notification_service.py # WebSocket notifications
+│   │   │
+│   │   ├── repositories/
+│   │   │   ├── __init__.py
+│   │   │   ├── mongodb/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── case_repository.py
+│   │   │   │   ├── document_repository.py
+│   │   │   │   └── search_history_repository.py
+│   │   │   ├── weaviate/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── vector_repository.py
+│   │   │   │   └── collection_manager.py
+│   │   │   └── neo4j/               # Phase 2
+│   │   │       ├── __init__.py
+│   │   │       └── relationship_repository.py
+│   │   │
+│   │   ├── processors/
+│   │   │   ├── __init__.py
+│   │   │   ├── document_processor.py # LlamaIndex integration
+│   │   │   ├── pdf_processor.py    # PDF extraction logic
+│   │   │   ├── text_processor.py   # Text cleaning and chunking
+│   │   │   ├── embedding_processor.py # Embedding generation
+│   │   │   └── relationship_extractor.py # Phase 2: NLP relationships
+│   │   │
+│   │   ├── utils/
+│   │   │   ├── __init__.py
+│   │   │   ├── logging.py          # Structured logging setup
+│   │   │   ├── decorators.py       # Common decorators
+│   │   │   ├── validators.py       # Data validation utilities
+│   │   │   ├── file_utils.py       # File processing utilities
+│   │   │   └── security.py         # Security utilities
+│   │   │
+│   │   └── tasks/                  # Async background tasks
+│   │       ├── __init__.py
+│   │       ├── document_tasks.py   # Document processing tasks
+│   │       └── relationship_tasks.py # Phase 2: Relationship extraction
+│   │
+│   └── tests/
+│       ├── __init__.py
+│       ├── conftest.py             # Pytest configuration
+│       ├── unit/
+│       │   ├── __init__.py
+│       │   ├── test_services/
+│       │   ├── test_repositories/
+│       │   └── test_processors/
+│       ├── integration/
+│       │   ├── __init__.py
+│       │   ├── test_api/
+│       │   └── test_database/
+│       └── e2e/
+│           ├── __init__.py
+│           └── test_workflows/
+│
+├── frontend/
+│   ├── __init__.py
+│   ├── main.py                     # Gradio application entry point
+│   ├── components/
+│   │   ├── __init__.py
+│   │   ├── sidebar.py              # Case navigation sidebar
+│   │   ├── search_pane.py          # Search interface
+│   │   ├── document_viewer.py      # Document display pane
+│   │   ├── admin_panel.py          # Admin configuration
+│   │   └── progress_tracker.py     # Progress tracking components
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   ├── websocket_client.py     # WebSocket client logic
+│   │   ├── api_client.py           # FastAPI client
+│   │   └── ui_helpers.py           # UI utility functions
+│   └── assets/
+│       ├── styles.css              # Custom CSS
+│       └── scripts.js              # Custom JavaScript
+│
+├── scripts/
+│   ├── setup_environment.py       # Environment setup automation
+│   ├── pull_models.py              # Ollama model pulling
+│   ├── init_databases.py           # Database initialization
+│   ├── backup_data.py              # Data backup utilities
+│   └── performance_test.py         # Performance testing
+│
+├── docs/
+│   ├── api/
+│   │   └── openapi.json            # Auto-generated API docs
+│   ├── architecture/
+│   │   ├── high-level-overview.md
+│   │   ├── detailed-specs.md
+│   │   └── project-summary.md
+│   ├── deployment/
+│   │   ├── docker-setup.md
+│   │   ├── ubuntu-config.md
+│   │   └── gpu-optimization.md
+│   └── user-guides/
+│       ├── admin-guide.md
+│       └── user-manual.md
+│
+├── config/
+│   ├── docker/
+│   │   ├── Dockerfile.backend
+│   │   ├── Dockerfile.frontend
+│   │   └── docker-compose.override.yml
+│   ├── nginx/                      # Future: Load balancing
+│   │   └── nginx.conf
+│   └── monitoring/                 # Future: Observability
+│       └── prometheus.yml
+│
+├── data/
+│   ├── .gitkeep
+│   ├── models/                     # Ollama model cache (if needed)
+│   ├── uploads/                    # Temporary file storage
+│   └── backups/                    # Database backups
+│
+└── logs/
+    ├── .gitkeep
+    ├── app.log
+    ├── error.log
+    └── performance.log
