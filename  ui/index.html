@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patexia Legal AI - UI Wireframes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+
+        .wireframe-container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .wireframe-title {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .wireframe-section {
+            margin-bottom: 40px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: #34495e;
+            color: white;
+            padding: 15px 20px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        /* Main Interface Layout */
+        .main-interface {
+            display: grid;
+            grid-template-areas:
+                "header header header"
+                "sidebar search-pane doc-viewer"
+                "sidebar history history";
+            grid-template-columns: 250px 1fr 1fr;
+            grid-template-rows: 60px 1fr 200px;
+            height: 800px;
+            gap: 2px;
+            background: #ecf0f1;
+        }
+
+        .header-bar {
+            grid-area: header;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            font-weight: 600;
+        }
+
+        .logo {
+            font-size: 20px;
+            color: #3498db;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .admin-toggle {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .sidebar {
+            grid-area: sidebar;
+            background: #34495e;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 15px;
+            color: #3498db;
+            font-size: 16px;
+        }
+
+        .case-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #2c3e50;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .case-item.active {
+            background: #3498db;
+            border-left-color: #e74c3c;
+        }
+
+        .case-item:hover {
+            background: #4a6741;
+        }
+
+        .case-marker {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .case-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .new-case-btn {
+            width: 100%;
+            padding: 12px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        .search-pane {
+            grid-area: search-pane;
+            background: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-header {
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-box {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .search-btn {
+            padding: 12px 24px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .search-options {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .search-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .results-header {
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .result-item {
+            padding: 15px;
+            border: 1px solid #ecf0f1;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .result-item:hover {
+            border-color: #3498db;
+            background: #f8f9fa;
+        }
+
+        .result-item.active {
+            border-color: #e74c3c;
+            background: #fff5f5;
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .result-meta {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 8px;
+        }
+
+        .result-snippet {
+            font-size: 13px;
+            color: #34495e;
+            line-height: 1.4;
+        }
+
+        .highlight {
+            background: #f1c40f;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        .doc-viewer {
+            grid-area: doc-viewer;
+            background: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .doc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .doc-title {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .doc-nav {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .nav-btn {
+            padding: 8px 12px;
+            background: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .match-counter {
+            padding: 8px 12px;
+            background: #34495e;
+            color: white;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+
+        .doc-content {
+            flex: 1;
+            overflow-y: auto;
+            line-height: 1.8;
+            font-size: 14px;
+        }
+
+        .doc-section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .doc-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .history-panel {
+            grid-area: history;
+            background: white;
+            padding: 20px;
+        }
+
+        .history-header {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .history-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .history-item {
+            padding: 8px 12px;
+            background: #ecf0f1;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .history-item:hover {
+            background: #3498db;
+            color: white;
+        }
+
+        /* Admin Panel Styles */
+        .admin-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .admin-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .admin-section h4 {
+            margin-bottom: 15px;
+            color: #495057;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 8px 0;
+        }
+
+        .config-label {
+            font-size: 13px;
+            color: #6c757d;
+        }
+
+        .config-input {
+            padding: 6px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 12px;
+            width: 100px;
+        }
+
+        .config-select {
+            padding: 6px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 12px;
+            width: 150px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #28a745;
+            margin-left: 8px;
+        }
+
+        .resource-bar {
+            background: #e9ecef;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-left: 10px;
+        }
+
+        .resource-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #ffc107, #dc3545);
+            transition: width 0.3s ease;
+        }
+
+        .progress-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .progress-header {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .progress-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .progress-info {
+            flex: 1;
+        }
+
+        .progress-filename {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .progress-status {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .progress-bar {
+            width: 200px;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-left: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #3498db;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.complete {
+            background: #28a745;
+        }
+
+        .progress-fill.error {
+            background: #dc3545;
+        }
+
+        .retry-btn {
+            background: #ffc107;
+            color: #212529;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+
+        .tab-container {
+            margin-bottom: 20px;
+        }
+
+        .tab-nav {
+            display: flex;
+            border-bottom: 2px solid #ecf0f1;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            color: #7f8c8d;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab-btn.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wireframe-container">
+        <div class="wireframe-title">
+            <h1>Patexia Legal AI Chatbot - UI Wireframes</h1>
+            <p>Interactive mockups with sample legal data</p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-container">
+            <div class="tab-nav">
+                <button class="tab-btn active" onclick="showTab('main-interface')">Main Interface</button>
+                <button class="tab-btn" onclick="showTab('admin-panel')">Admin Panel</button>
+                <button class="tab-btn" onclick="showTab('progress-tracking')">Progress Tracking</button>
+            </div>
+
+            <!-- Main Interface Tab -->
+            <div id="main-interface" class="tab-content active">
+                <div class="wireframe-section">
+                    <div class="section-header">Main Legal AI Interface</div>
+                    <div class="main-interface">
+                        <!-- Header Bar -->
+                        <div class="header-bar">
+                            <div class="logo">⚖️ Patexia Legal AI</div>
+                            <div class="user-info">
+                                <span>👤 Sarah Johnson, Esq.</span>
+                                <button class="admin-toggle">Admin Panel</button>
+                            </div>
+                        </div>
+
+                        <!-- Sidebar -->
+                        <div class="sidebar">
+                            <h3>📁 Active Cases</h3>
+                            <div class="case-item active">
+                                <div class="case-marker" style="background: #e74c3c;"></div>
+                                <div class="case-name">Patent-2025-WiFi6</div>
+                            </div>
+                            <div class="case-item">
+                                <div class="case-marker" style="background: #27ae60;"></div>
+                                <div class="case-name">Contract-TX-Merger</div>
+                            </div>
+                            <div class="case-item">
+                                <div class="case-marker" style="background: #3498db;"></div>
+                                <div class="case-name">Litigation-IP-Apple</div>
+                            </div>
+                            <div class="case-item">
+                                <div class="case-marker" style="background: #f39c12;"></div>
+                                <div class="case-name">Corporate-M&A-Tesla</div>
+                            </div>
+                            <button class="new-case-btn">+ New Case</button>
+
+                            <h3 style="margin-top: 30px;">📋 Recent Cases</h3>
+                            <div class="case-item">
+                                <div class="case-marker" style="background: #95a5a6;"></div>
+                                <div class="case-name">Archived-2024-Q4</div>
+                            </div>
+                        </div>
+
+                        <!-- Search Pane -->
+                        <div class="search-pane">
+                            <div class="search-header">
+                                <div class="search-input">
+                                    <input type="text" class="search-box"
+                                        placeholder="Find all IP filings related to wireless standard WiFi6..."
+                                        value="wireless standard WiFi6 patent applications">
+                                    <button class="search-btn">🔍 Search</button>
+                                </div>
+                                <div class="search-options">
+                                    <label class="search-option">
+                                        <input type="checkbox" checked> Semantic Search
+                                    </label>
+                                    <label class="search-option">
+                                        <input type="checkbox" checked> Keyword Search
+                                    </label>
+                                    <label class="search-option">
+                                        Alpha: <input type="range" min="0" max="1" step="0.1" value="0.6"
+                                            style="width: 80px;">
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="results-header">📄 Search Results (15 documents found)</div>
+
+                            <div class="result-item active">
+                                <div class="result-title">📄 Patent_Application_WiFi6_2024.pdf</div>
+                                <div class="result-meta">Relevance: 95% | 3 matches | Added: 2024-11-15</div>
+                                <div class="result-snippet">The implementation of <span class="highlight">wireless
+                                        standard WiFi6</span> provides enhanced throughput capabilities through OFDMA
+                                    and MU-MIMO technologies...</div>
+                            </div>
+
+                            <div class="result-item">
+                                <div class="result-title">📄 Technical_Specification_802.11ax.txt</div>
+                                <div class="result-meta">Relevance: 87% | 2 matches | Added: 2024-11-14</div>
+                                <div class="result-snippet">IEEE 802.11ax protocol specification for <span
+                                        class="highlight">WiFi6</span> standard implementation with backward
+                                    compatibility features...</div>
+                            </div>
+
+                            <div class="result-item">
+                                <div class="result-title">📄 Prior_Art_Analysis_Wireless.pdf</div>
+                                <div class="result-meta">Relevance: 78% | 1 match | Added: 2024-11-13</div>
+                                <div class="result-snippet">Comprehensive analysis of existing <span
+                                        class="highlight">wireless</span> technologies and their patent implications for
+                                    next-generation standards...</div>
+                            </div>
+
+                            <div class="result-item">
+                                <div class="result-title">📄 Claim_Construction_Filing.txt</div>
+                                <div class="result-meta">Relevance: 71% | 2 matches | Added: 2024-11-12</div>
+                                <div class="result-snippet">Legal brief outlining claim construction arguments for <span
+                                        class="highlight">patent applications</span> related to wireless communication
+                                    technologies...</div>
+                            </div>
+                        </div>
+
+                        <!-- Document Viewer -->
+                        <div class="doc-viewer">
+                            <div class="doc-header">
+                                <div class="doc-title">📄 Patent_Application_WiFi6_2024.pdf</div>
+                                <div class="doc-nav">
+                                    <button class="nav-btn">◀ Prev Match</button>
+                                    <span class="match-counter">2/3</span>
+                                    <button class="nav-btn">Next Match ▶</button>
+                                </div>
+                            </div>
+
+                            <div class="doc-content">
+                                <div class="doc-section">
+                                    <div class="section-title">3.2 Technical Implementation Details</div>
+                                    <p>The present invention relates to the implementation of <span
+                                            class="highlight">wireless standard WiFi6</span> (IEEE 802.11ax) technology
+                                        in mobile devices. The proposed system enhances data throughput by utilizing
+                                        Orthogonal Frequency Division Multiple Access (OFDMA) and Multi-User Multiple
+                                        Input Multiple Output (MU-MIMO) technologies.</p>
+
+                                    <p>Key technical innovations include:</p>
+                                    <ul style="margin: 15px 0; padding-left: 20px;">
+                                        <li>Enhanced spectral efficiency through 1024-QAM modulation</li>
+                                        <li>Improved power management for battery-operated devices</li>
+                                        <li>Backward compatibility with 802.11ac and earlier standards</li>
+                                        <li>Target Wake Time (TWT) for IoT device optimization</li>
+                                    </ul>
+
+                                    <p>The <span class="highlight">wireless standard WiFi6</span> implementation
+                                        provides significant performance improvements over previous generations, with
+                                        theoretical maximum speeds of up to 9.6 Gbps compared to 802.11ac's 3.5 Gbps.
+                                    </p>
+                                </div>
+
+                                <div class="doc-section">
+                                    <div class="section-title">4.1 Claim Structure</div>
+                                    <p>Claim 1: A wireless communication system implementing the IEEE 802.11ax standard,
+                                        comprising...</p>
+                                </div>
+                            </div>
+
+                            <div class="doc-actions">
+                                <button class="action-btn">📋 Copy Citation</button>
+                                <button class="action-btn">🔍 Find Similar</button>
+                                <button class="action-btn">💾 Export Section</button>
+                            </div>
+                        </div>
+
+                        <!-- Search History -->
+                        <div class="history-panel">
+                            <div class="history-header">🕒 Recent Searches</div>
+                            <div class="history-items">
+                                <div class="history-item">wireless standard WiFi6 patent applications</div>
+                                <div class="history-item">OFDMA implementation claims</div>
+                                <div class="history-item">802.11ax prior art analysis</div>
+                                <div class="history-item">MU-MIMO patent landscape</div>
+                                <div class="history-item">WiFi6 licensing agreements</div>
+                                <div class="history-item">IEEE 802.11ax standard technical specs</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Panel Tab -->
+            <div id="admin-panel" class="tab-content">
+                <div class="wireframe-section">
+                    <div class="section-header">Admin Configuration Panel</div>
+                    <div class="admin-panel">
+                        <div class="admin-section">
+                            <h4>🤖 Model Management</h4>
+                            <div class="config-item">
+                                <span class="config-label">Embedding Model</span>
+                                <select class="config-select">
+                                    <option selected>mxbai-embed-large</option>
+                                    <option>nomic-embed-text</option>
+                                    <option>e5-large-v2</option>
+                                </select>
+                                <span class="status-indicator"></span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Fallback Model</span>
+                                <select class="config-select">
+                                    <option>mxbai-embed-large</option>
+                                    <option selected>nomic-embed-text</option>
+                                    <option>e5-large-v2</option>
+                                </select>
+                                <span class="status-indicator"></span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">LLM Model</span>
+                                <select class="config-select">
+                                    <option selected>llama3.1:8b</option>
+                                    <option>llama3.1:70b</option>
+                                    <option>qwen2.5:72b</option>
+                                </select>
+                                <span class="status-indicator"></span>
+                            </div>
+                        </div>
+
+                        <div class="admin-section">
+                            <h4>⚙️ Search Configuration</h4>
+                            <div class="config-item">
+                                <span class="config-label">Chunk Size</span>
+                                <input type="number" class="config-input" value="768">
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Chunk Overlap</span>
+                                <input type="number" class="config-input" value="100">
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Hybrid Alpha</span>
+                                <input type="number" class="config-input" value="0.6" step="0.1" min="0" max="1">
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Top-K Results</span>
+                                <input type="number" class="config-input" value="15">
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Similarity Threshold</span>
+                                <input type="number" class="config-input" value="0.7" step="0.1" min="0" max="1">
+                            </div>
+                        </div>
+
+                        <div class="admin-section">
+                            <h4>📊 Resource Monitor</h4>
+                            <div class="config-item">
+                                <span class="config-label">GPU Usage</span>
+                                <div class="resource-bar" style="width: 120px;">
+                                    <div class="resource-fill" style="width: 75%;"></div>
+                                </div>
+                                <span style="font-size: 12px; margin-left: 8px;">75% (60/80GB)</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">CPU Usage</span>
+                                <div class="resource-bar" style="width: 120px;">
+                                    <div class="resource-fill" style="width: 45%;"></div>
+                                </div>
+                                <span style="font-size: 12px; margin-left: 8px;">45%</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Memory Usage</span>
+                                <div class="resource-bar" style="width: 120px;">
+                                    <div class="resource-fill" style="width: 62%;"></div>
+                                </div>
+                                <span style="font-size: 12px; margin-left: 8px;">62% (10/16GB)</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Active Connections</span>
+                                <span style="font-size: 14px; font-weight: 600;">7</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Queue Length</span>
+                                <span style="font-size: 14px; font-weight: 600;">2 requests</span>
+                            </div>
+                        </div>
+
+                        <div class="admin-section">
+                            <h4>🗄️ System Status</h4>
+                            <div class="config-item">
+                                <span class="config-label">MongoDB</span>
+                                <span style="color: #28a745; font-size: 12px;">✓ Connected (3ms)</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Weaviate</span>
+                                <span style="color: #28a745; font-size: 12px;">✓ Connected (1ms)</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Ollama</span>
+                                <span style="color: #28a745; font-size: 12px;">✓ Available (15ms)</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Collections</span>
+                                <span style="font-size: 12px;">4 active, 127 documents</span>
+                            </div>
+                            <div class="config-item">
+                                <span class="config-label">Storage Used</span>
+                                <span style="font-size: 12px;">156GB / 500GB (31%)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="padding: 20px; text-align: center;">
+                        <button
+                            style="padding: 12px 24px; background: #3498db; color: white; border: none; border-radius: 5px; margin: 0 10px; cursor: pointer;">💾
+                            Save Configuration</button>
+                        <button
+                            style="padding: 12px 24px; background: #95a5a6; color: white; border: none; border-radius: 5px; margin: 0 10px; cursor: pointer;">🔄
+                            Reset to Defaults</button>
+                        <button
+                            style="padding: 12px 24px; background: #e74c3c; color: white; border: none; border-radius: 5px; margin: 0 10px; cursor: pointer;">🧪
+                            Test Configuration</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Tracking Tab -->
+            <div id="progress-tracking" class="tab-content">
+                <div class="wireframe-section">
+                    <div class="section-header">Document Processing Progress</div>
+                    <div class="progress-container">
+                        <div class="progress-header">📤 Current Upload Session</div>
+
+                        <div class="progress-item">
+                            <div class="progress-info">
+                                <div class="progress-filename">📄 Contract_Amendment_2024.pdf</div>
+                                <div class="progress-status">✅ Processing complete - 47 chunks created</div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill complete" style="width: 100%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="progress-item">
+                            <div class="progress-info">
+                                <div class="progress-filename">📄 Technical_Specifications_WiFi6.pdf</div>
+                                <div class="progress-status">🔄 Vectorizing embeddings... (Stage 3/3)</div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 85%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="progress-item">
+                            <div class="progress-info">
+                                <div class="progress-filename">📄 Prior_Art_Analysis.txt</div>
+                                <div class="progress-status">📝 Extracting text and chunking... (Stage 2/3)</div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 60%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="progress-item">
+                            <div class="progress-info">
+                                <div class="progress-filename">📄 Legal_Brief_Summary.pdf</div>
+                                <div class="progress-status">⚠️ PDF extraction failed - corrupted file</div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill error" style="width: 25%;"></div>
+                            </div>
+                            <button class="retry-btn">🔄 Retry</button>
+                        </div>
+
+                        <div class="progress-item">
+                            <div class="progress-info">
+                                <div class="progress-filename">📄 Patent_Claims_Analysis.txt</div>
+                                <div class="progress-status">⏳ Queued for processing...</div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="progress-container">
+                        <div class="progress-header">📊 Session Statistics</div>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 15px;">
+                            <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-size: 24px; font-weight: 600; color: #28a745;">4</div>
+                                <div style="font-size: 12px; color: #6c757d;">Documents Completed</div>
+                            </div>
+                            <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-size: 24px; font-weight: 600; color: #3498db;">2</div>
+                                <div style="font-size: 12px; color: #6c757d;">Currently Processing</div>
+                            </div>
+                            <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-size: 24px; font-weight: 600; color: #dc3545;">1</div>
+                                <div style="font-size: 12px; color: #6c757d;">Failed Documents</div>
+                            </div>
+                            <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-size: 24px; font-weight: 600; color: #2c3e50;">127</div>
+                                <div style="font-size: 12px; color: #6c757d;">Total Chunks Created</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="progress-container">
+                        <div class="progress-header">⚡ Real-time System Metrics</div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 15px;">
+                            <div style="padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-size: 14px; font-weight: 600; margin-bottom: 10px; color: #495057;">🚀
+                                    Processing Speed</div>
+                                <div style="font-size: 18px; color: #28a745;">~850 tokens/sec</div>
+                                <div style="font-size: 11px; color: #6c757d;">Average embedding generation</div>
+                            </div>
+                            <div style="padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-size: 14px; font-weight: 600; margin-bottom: 10px; color: #495057;">🔗
+                                    WebSocket Status</div>
+                                <div style="font-size: 18px; color: #28a745;">7 Active</div>
+                                <div style="font-size: 11px; color: #6c757d;">Connected clients</div>
+                            </div>
+                            <div style="padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-size: 14px; font-weight: 600; margin-bottom: 10px; color: #495057;">⏱️
+                                    Avg Response Time</div>
+                                <div style="font-size: 18px; color: #3498db;">2.1 seconds</div>
+                                <div style="font-size: 11px; color: #6c757d;">Search query processing</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Case Creation Modal Wireframe -->
+        <div class="wireframe-section">
+            <div class="section-header">Case Creation Modal</div>
+            <div style="padding: 40px; display: flex; justify-content: center;">
+                <div
+                    style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); width: 500px;">
+                    <h3 style="margin-bottom: 20px; color: #2c3e50;">📁 Create New Legal Case</h3>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #34495e;">Case
+                            Name</label>
+                        <input type="text" placeholder="e.g., Patent-2025-WiFi7-Dispute"
+                            style="width: 100%; padding: 12px; border: 2px solid #bdc3c7; border-radius: 8px; font-size: 14px;">
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #34495e;">Initial
+                            Case Summary</label>
+                        <textarea placeholder="Brief description of the case, key parties, and main legal issues..."
+                            style="width: 100%; height: 80px; padding: 12px; border: 2px solid #bdc3c7; border-radius: 8px; font-size: 14px; resize: vertical;"></textarea>
+                    </div>
+
+                    <div style="margin-bottom: 25px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #34495e;">Visual
+                            Marker</label>
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <span style="font-size: 12px; color: #7f8c8d;">Color:</span>
+                            <div style="display: flex; gap: 8px;">
+                                <div
+                                    style="width: 20px; height: 20px; background: #e74c3c; border-radius: 50%; cursor: pointer; border: 2px solid #2c3e50;">
+                                </div>
+                                <div
+                                    style="width: 20px; height: 20px; background: #27ae60; border-radius: 50%; cursor: pointer; border: 2px solid transparent;">
+                                </div>
+                                <div
+                                    style="width: 20px; height: 20px; background: #3498db; border-radius: 50%; cursor: pointer; border: 2px solid transparent;">
+                                </div>
+                                <div
+                                    style="width: 20px; height: 20px; background: #f39c12; border-radius: 50%; cursor: pointer; border: 2px solid transparent;">
+                                </div>
+                                <div
+                                    style="width: 20px; height: 20px; background: #9b59b6; border-radius: 50%; cursor: pointer; border: 2px solid transparent;">
+                                </div>
+                            </div>
+                            <span style="font-size: 12px; color: #7f8c8d; margin-left: 10px;">Icon:</span>
+                            <select
+                                style="padding: 6px 10px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 12px;">
+                                <option>📄 Document</option>
+                                <option>⚖️ Legal</option>
+                                <option>🏢 Corporate</option>
+                                <option>💼 Business</option>
+                                <option>📋 Contract</option>
+                                <option>🔍 Investigation</option>
+                                <option>⚡ Urgnet</option>
+                                <option>🎯 Priority</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; gap: 15px;">
+                        <button
+                            style="flex: 1; padding: 12px; background: #95a5a6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancel</button>
+                        <button
+                            style="flex: 1; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Create
+                            Case</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Analytics Wireframe -->
+        <div class="wireframe-section">
+            <div class="section-header">Search Analytics Dashboard</div>
+            <div style="padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                    <h4 style="margin-bottom: 15px; color: #495057;">📈 Search Performance Trends</h4>
+                    <div
+                        style="height: 200px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6c757d; border: 2px dashed #dee2e6;">
+                        [Chart: Search response times over time]<br>
+                        <small>Average: 2.1s | Peak: 4.2s | Best: 0.8s</small>
+                    </div>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                    <h4 style="margin-bottom: 15px; color: #495057;">🔍 Popular Search Terms</h4>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: white; border-radius: 5px;">
+                            <span style="font-size: 13px;">"WiFi6 patent applications"</span>
+                            <span style="font-size: 11px; color: #6c757d;">47 searches</span>
+                        </div>
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: white; border-radius: 5px;">
+                            <span style="font-size: 13px;">"liability clauses contract"</span>
+                            <span style="font-size: 11px; color: #6c757d;">31 searches</span>
+                        </div>
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: white; border-radius: 5px;">
+                            <span style="font-size: 13px;">"OFDMA implementation"</span>
+                            <span style="font-size: 11px; color: #6c757d;">28 searches</span>
+                        </div>
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: white; border-radius: 5px;">
+                            <span style="font-size: 13px;">"prior art analysis"</span>
+                            <span style="font-size: 11px; color: #6c757d;">23 searches</span>
+                        </div>
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: white; border-radius: 5px;">
+                            <span style="font-size: 13px;">"802.11ax standard"</span>
+                            <span style="font-size: 11px; color: #6c757d;">19 searches</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabId) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            // Remove active class from all tab buttons
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+
+            // Show selected tab content
+            document.getElementById(tabId).classList.add('active');
+
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        // Add some interactive behavior for demo purposes
+        document.addEventListener('DOMContentLoaded', function () {
+            // Make result items clickable
+            const resultItems = document.querySelectorAll('.result-item');
+            resultItems.forEach(item => {
+                item.addEventListener('click', function () {
+                    resultItems.forEach(r => r.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // Make case items clickable
+            const caseItems = document.querySelectorAll('.case-item');
+            caseItems.forEach(item => {
+                item.addEventListener('click', function () {
+                    caseItems.forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // Make history items clickable
+            const historyItems = document.querySelectorAll('.history-item');
+            historyItems.forEach(item => {
+                item.addEventListener('click', function () {
+                    document.querySelector('.search-box').value = this.textContent;
+                });
+            });
+
+            // Simulate progress bar animation
+            setInterval(() => {
+                const progressBars = document.querySelectorAll('.progress-fill:not(.complete):not(.error)');
+                progressBars.forEach(bar => {
+                    let currentWidth = parseInt(bar.style.width) || 0;
+                    if (currentWidth < 100) {
+                        currentWidth += Math.random() * 5;
+                        if (currentWidth > 100) currentWidth = 100;
+                        bar.style.width = currentWidth + '%';
+
+                        if (currentWidth >= 100) {
+                            bar.classList.add('complete');
+                            const statusElement = bar.closest('.progress-item').querySelector('.progress-status');
+                            statusElement.textContent = '✅ Processing complete - ' + Math.floor(Math.random() * 50 + 20) + ' chunks created';
+                        }
+                    }
+                });
+            }, 2000);
+
+            // Simulate resource usage fluctuation
+            setInterval(() => {
+                const resourceBars = document.querySelectorAll('.resource-fill');
+                resourceBars.forEach(bar => {
+                    const currentWidth = parseInt(bar.style.width) || 50;
+                    const fluctuation = (Math.random() - 0.5) * 10;
+                    let newWidth = currentWidth + fluctuation;
+                    newWidth = Math.max(20, Math.min(90, newWidth));
+                    bar.style.width = newWidth + '%';
+                });
+            }, 3000);
+        });
+    </script>
+</body>
+
+</html>
