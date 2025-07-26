@@ -21,4 +21,4 @@ Do not offer to write code for files that have already been implemented (referen
 
 When we finish writing one file, pause and ask which file to generate next.
 
-class to generate next: backend/app/models/domain/search_result.py
+class to generate next: write scripts/pull_models.py

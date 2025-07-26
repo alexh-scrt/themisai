@@ -1,0 +1,399 @@
+# =============================================================================
+# Multi-stage Dockerfile for Patexia Legal AI Chatbot Backend
+# 
+# This Dockerfile builds a production-ready Python backend container with:
+# - GPU support for NVIDIA CUDA acceleration
+# - Development and production variants
+# - Security hardening and optimization
+# - Legal document processing capabilities
+# - Hot-reload support for development
+# =============================================================================
+
+# =============================================================================
+# STAGE 1: Base Python Environment with CUDA Support
+# =============================================================================
+FROM nvidia/cuda:12.2-devel-ubuntu22.04 as base
+
+# Set build arguments
+ARG PYTHON_VERSION=3.13
+ARG CUDA_VERSION=12.2
+ARG TARGETPLATFORM=linux/amd64
+
+# Environment variables for Python
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONHASHSEED=random \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=100
+
+# Environment variables for CUDA
+ENV NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+    CUDA_HOME=/usr/local/cuda \
+    PATH=/usr/local/cuda/bin:$PATH \
+    LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+
+# Set timezone
+ENV TZ=UTC
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Python build dependencies
+    software-properties-common \
+    build-essential \
+    ca-certificates \
+    curl \
+    wget \
+    git \
+    \
+    # Python and pip
+    python3.13 \
+    python3.13-dev \
+    python3.13-distutils \
+    python3-pip \
+    \
+    # System utilities
+    htop \
+    vim \
+    nano \
+    less \
+    tree \
+    jq \
+    \
+    # Network utilities
+    netcat-openbsd \
+    telnet \
+    iputils-ping \
+    \
+    # PDF processing dependencies
+    poppler-utils \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    \
+    # Image processing
+    libmagic1 \
+    libmagic-dev \
+    \
+    # Compression utilities
+    unzip \
+    zip \
+    gzip \
+    \
+    # Security and monitoring
+    procps \
+    psmisc \
+    lsof \
+    strace \
+    \
+    # Development tools (for development builds)
+    gdb \
+    valgrind \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create symlinks for Python
+RUN ln -sf /usr/bin/python3.13 /usr/bin/python3 && \
+    ln -sf /usr/bin/python3 /usr/bin/python
+
+# Upgrade pip and install core Python packages
+RUN python -m pip install --upgrade pip setuptools wheel
+
+# Create application user for security
+RUN groupadd -r appuser && \
+    useradd -r -g appuser -d /app -s /bin/bash -c "Application User" appuser
+
+# Create application directories
+RUN mkdir -p /app/{backend,config,logs,data,temp,cache} && \
+    chown -R appuser:appuser /app
+
+# =============================================================================
+# STAGE 2: Development Dependencies
+# =============================================================================
+FROM base as dev-dependencies
+
+# Install development and debugging tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Development tools
+    python3.13-venv \
+    python3-dev \
+    gcc \
+    g++ \
+    make \
+    cmake \
+    \
+    # Debugging tools
+    gdb \
+    valgrind \
+    strace \
+    ltrace \
+    \
+    # Development utilities
+    tmux \
+    screen \
+    openssh-client \
+    rsync \
+    \
+    # Performance monitoring
+    sysstat \
+    iotop \
+    nethogs \
+    \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Install development Python packages
+RUN pip install --no-cache-dir \
+    # Debugging
+    debugpy==1.8.0 \
+    ipdb==0.13.13 \
+    \
+    # Code quality
+    black==23.12.1 \
+    isort==5.13.2 \
+    flake8==7.0.0 \
+    mypy==1.8.0 \
+    \
+    # Testing
+    pytest==7.4.4 \
+    pytest-asyncio==0.23.2 \
+    pytest-cov==4.1.0 \
+    pytest-mock==3.12.0 \
+    \
+    # Development utilities
+    ipython==8.18.1 \
+    jupyter==1.0.0 \
+    notebook==7.0.6
+
+# =============================================================================
+# STAGE 3: Production Dependencies
+# =============================================================================
+FROM base as prod-dependencies
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements files
+COPY requirements.txt requirements-dev.txt ./
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install PyTorch with CUDA support (specific version for legal AI)
+RUN pip install --no-cache-dir \
+    torch==2.1.2+cu121 \
+    torchvision==0.16.2+cu121 \
+    torchaudio==2.1.2+cu121 \
+    --index-url https://download.pytorch.org/whl/cu121
+
+# Install additional AI/ML packages
+RUN pip install --no-cache-dir \
+    # Core ML libraries
+    sentence-transformers==2.2.2 \
+    transformers==4.36.2 \
+    numpy==1.26.2 \
+    pandas==2.1.4 \
+    scipy==1.11.4 \
+    scikit-learn==1.3.2 \
+    \
+    # Document processing
+    llama-index==0.9.39 \
+    pypdf==3.17.4 \
+    pdfplumber==0.10.3 \
+    python-docx==1.1.0 \
+    python-magic==0.4.27 \
+    \
+    # Vector databases
+    weaviate-client==3.25.3 \
+    \
+    # Traditional databases
+    pymongo==4.6.1 \
+    motor==3.3.2 \
+    neo4j==5.15.0 \
+    redis==5.0.1 \
+    \
+    # Web framework
+    fastapi==0.108.0 \
+    uvicorn[standard]==0.25.0 \
+    gradio==4.15.0 \
+    \
+    # HTTP clients
+    httpx==0.26.0 \
+    aiohttp==3.9.1 \
+    \
+    # WebSocket support
+    websockets==12.0 \
+    python-socketio==5.11.0 \
+    \
+    # Configuration and validation
+    pydantic==2.5.2 \
+    pydantic-settings==2.1.0 \
+    \
+    # Monitoring and logging
+    structlog==23.2.0 \
+    rich==13.7.0 \
+    psutil==5.9.6 \
+    \
+    # File monitoring
+    watchdog==3.0.0 \
+    \
+    # Security
+    cryptography==41.0.8 \
+    \
+    # Utilities
+    python-multipart==0.0.6 \
+    python-dateutil==2.8.2 \
+    pytz==2023.3 \
+    click==8.1.7
+
+# =============================================================================
+# STAGE 4: Development Build
+# =============================================================================
+FROM dev-dependencies as development
+
+# Install development dependencies
+RUN pip install --no-cache-dir -r requirements-dev.txt
+
+# Set development environment variables
+ENV ENVIRONMENT=development \
+    DEBUG=true \
+    LOG_LEVEL=DEBUG \
+    ENABLE_HOT_RELOAD=true \
+    ENABLE_DEBUG_MODE=true \
+    ENABLE_PROFILING=true
+
+# Copy application code
+COPY --chown=appuser:appuser . /app/
+
+# Create development directories
+RUN mkdir -p /app/{logs/dev,data/dev,temp/dev,cache/dev,backups/dev} && \
+    chown -R appuser:appuser /app
+
+# Switch to application user
+USER appuser
+
+# Set Python path
+ENV PYTHONPATH=/app:/app/backend
+
+# Expose development ports
+EXPOSE 8000 7860 5678 8001
+
+# Development entrypoint with debugger support
+ENTRYPOINT ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678"]
+CMD ["--wait-for-client", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/app/backend"]
+
+# =============================================================================
+# STAGE 5: Production Build
+# =============================================================================
+FROM prod-dependencies as production
+
+# Set production environment variables
+ENV ENVIRONMENT=production \
+    DEBUG=false \
+    LOG_LEVEL=INFO \
+    ENABLE_HOT_RELOAD=false \
+    ENABLE_DEBUG_MODE=false \
+    ENABLE_PROFILING=false
+
+# Copy application code
+COPY --chown=appuser:appuser backend/ /app/backend/
+COPY --chown=appuser:appuser config/ /app/config/
+COPY --chown=appuser:appuser scripts/ /app/scripts/
+
+# Copy configuration files
+COPY --chown=appuser:appuser pyproject.toml /app/
+COPY --chown=appuser:appuser README.md /app/
+COPY --chown=appuser:appuser LICENSE /app/
+
+# Create production directories
+RUN mkdir -p /app/{logs,data,temp,cache,backups} && \
+    chown -R appuser:appuser /app
+
+# Install the application in development mode for easier debugging
+RUN pip install -e .
+
+# Switch to application user
+USER appuser
+
+# Set Python path
+ENV PYTHONPATH=/app:/app/backend
+
+# Create health check script
+RUN echo '#!/bin/bash\ncurl -f http://localhost:8000/health || exit 1' > /app/healthcheck.sh && \
+    chmod +x /app/healthcheck.sh
+
+# Expose production ports
+EXPOSE 8000 7860
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD ["/app/healthcheck.sh"]
+
+# Production entrypoint
+ENTRYPOINT ["python", "-m", "uvicorn"]
+CMD ["backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+
+# =============================================================================
+# STAGE 6: Testing Build
+# =============================================================================
+FROM development as testing
+
+# Install additional testing dependencies
+RUN pip install --no-cache-dir \
+    pytest-xdist==3.5.0 \
+    pytest-benchmark==4.0.0 \
+    pytest-timeout==2.2.0 \
+    coverage==7.3.4 \
+    factory-boy==3.3.0 \
+    faker==21.0.0
+
+# Set testing environment variables
+ENV ENVIRONMENT=testing \
+    DEBUG=true \
+    LOG_LEVEL=DEBUG \
+    TESTING=true \
+    PYTEST_CURRENT_TEST=true
+
+# Copy test files
+COPY --chown=appuser:appuser tests/ /app/tests/
+
+# Create testing directories
+RUN mkdir -p /app/{test_data,test_logs,test_cache} && \
+    chown -R appuser:appuser /app
+
+# Testing command
+CMD ["python", "-m", "pytest", "tests/", "-v", "--cov=backend", "--cov-report=html", "--cov-report=term"]
+
+# =============================================================================
+# STAGE 7: Final Stage Selection
+# =============================================================================
+FROM ${BUILD_TARGET:-production} as final
+
+# Add labels for container metadata
+LABEL org.opencontainers.image.title="Patexia Legal AI Chatbot Backend" \
+      org.opencontainers.image.description="Backend service for legal document processing and AI search" \
+      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.vendor="Patexia" \
+      org.opencontainers.image.authors="Development Team" \
+      org.opencontainers.image.source="https://github.com/patexia/legal-ai-chatbot" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.revision="${VCS_REF}"
+
+# Final setup and validation
+RUN python --version && \
+    pip --version && \
+    python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}')" && \
+    python -c "import fastapi; print(f'FastAPI version: {fastapi.__version__}')" && \
+    python -c "import llama_index; print(f'LlamaIndex version: {llama_index.__version__}')"
+
+# Set final working directory
+WORKDIR /app
+
+# Documentation for the container
+RUN echo "Patexia Legal AI Chatbot Backend Container" > /app/CONTAINER_INFO.txt && \
+    echo "Built on: $(date)" >> /app/CONTAINER_INFO.txt && \
+    echo "Python version: $(python --version)" >> /app/CONTAINER_INFO.txt && \
+    echo "CUDA support: $(python -c 'import torch; print(torch.cuda.is_available())')" >> /app/CONTAINER_INFO.txt && \
+    echo "Environment: ${ENVIRONMENT}" >> /app/CONTAINER_INFO.txt

@@ -1,0 +1,460 @@
+# =============================================================================
+# Prometheus Configuration for Patexia Legal AI Chatbot
+# 
+# This configuration defines monitoring and metrics collection for:
+# - Backend FastAPI application metrics
+# - Frontend Gradio interface metrics
+# - Database performance (MongoDB, Weaviate, Neo4j)
+# - AI model performance (Ollama/embedding generation)
+# - System resource monitoring
+# - Legal document processing metrics
+# - WebSocket connection monitoring
+# - Custom business metrics for legal workflows
+# =============================================================================
+
+# Global Prometheus configuration
+global:
+  # Scrape interval for all targets unless overridden
+  scrape_interval: 15s
+  
+  # Evaluation interval for rules
+  evaluation_interval: 15s
+  
+  # External labels for all metrics
+  external_labels:
+    monitor: 'patexia-legal-ai'
+    environment: 'development'
+    cluster: 'local'
+    datacenter: 'local-dev'
+
+# Rule files for alerting and recording rules
+rule_files:
+  - "rules/alerting_rules.yml"
+  - "rules/recording_rules.yml"
+  - "rules/legal_ai_rules.yml"
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+      scheme: http
+      timeout: 10s
+      api_version: v2
+
+# Scrape configurations for different components
+scrape_configs:
+  # =============================================================================
+  # PROMETHEUS SELF-MONITORING
+  # =============================================================================
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scheme: http
+
+  # =============================================================================
+  # BACKEND APPLICATION MONITORING
+  # =============================================================================
+  - job_name: 'patexia-backend'
+    static_configs:
+      - targets: 
+          - 'app:8000'  # Main FastAPI application
+          - 'app:8001'  # Metrics endpoint (development)
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    metrics_path: /metrics
+    scheme: http
+    params:
+      format: ['prometheus']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 'app:8000'
+    metric_relabel_configs:
+      # Add service label to all metrics
+      - target_label: service
+        replacement: 'backend'
+      # Add component labels
+      - source_labels: [__name__]
+        regex: 'fastapi_.*'
+        target_label: component
+        replacement: 'api'
+      - source_labels: [__name__]
+        regex: 'document_.*'
+        target_label: component
+        replacement: 'document_processor'
+      - source_labels: [__name__]
+        regex: 'search_.*'
+        target_label: component
+        replacement: 'search_engine'
+
+  # =============================================================================
+  # FRONTEND APPLICATION MONITORING
+  # =============================================================================
+  - job_name: 'patexia-frontend'
+    static_configs:
+      - targets: ['frontend:7860']
+    scrape_interval: 15s
+    scrape_timeout: 5s
+    metrics_path: /metrics
+    scheme: http
+    metric_relabel_configs:
+      - target_label: service
+        replacement: 'frontend'
+      - target_label: component
+        replacement: 'gradio'
+
+  # =============================================================================
+  # DATABASE MONITORING
+  # =============================================================================
+  
+  # MongoDB monitoring via MongoDB Exporter
+  - job_name: 'mongodb'
+    static_configs:
+      - targets: ['mongodb-exporter:9216']
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    metrics_path: /metrics
+    scheme: http
+    params:
+      collect[]: 
+        - 'database'
+        - 'collection'
+        - 'topmetrics'
+        - 'indexstats'
+        - 'collstats'
+    metric_relabel_configs:
+      - target_label: service
+        replacement: 'mongodb'
+      - target_label: component
+        replacement: 'database'
+
+  # Weaviate monitoring via custom metrics endpoint
+  - job_name: 'weaviate'
+    static_configs:
+      - targets: ['weaviate:8080']
+    scrape_interval: 20s
+    scrape_timeout: 8s
+    metrics_path: /v1/meta
+    scheme: http
+    metric_relabel_configs:
+      - target_label: service
+        replacement: 'weaviate'
+      - target_label: component
+        replacement: 'vector_database'
+
+  # Neo4j monitoring (Phase 2)
+  - job_name: 'neo4j'
+    static_configs:
+      - targets: ['neo4j:7474']
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    metrics_path: /db/manage/server/jmx/domain/org.neo4j
+    scheme: http
+    metric_relabel_configs:
+      - target_label: service
+        replacement: 'neo4j'
+      - target_label: component
+        replacement: 'graph_database'
+
+  # Redis monitoring
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 20s
+    scrape_timeout: 5s
+    metrics_path: /metrics
+    scheme: http
+    metric_relabel_configs:
+      - target_label: service
+        replacement: 'redis'
+      - target_label: component
+        replacement: 'cache'
+
+  # =============================================================================
+  # AI MODEL MONITORING
+  # =============================================================================
+  
+  # Ollama monitoring via custom metrics
+  - job_name: 'ollama'
+    static_configs:
+      - targets: ['ollama:11434']
+    scrape_interval: 15s
+    scrape_timeout: 8s
+    metrics_path: /api/metrics
+    scheme: http
+    metric_relabel_configs:
+      - target_label: service
+        replacement: 'ollama'
+      - target_label: component
+        replacement: 'model_server'
+    relabel_configs:
+      # Add model-specific labels
+      - source_labels: [model]
+        target_label: ai_model
+      - source_labels: [model_type]
+        target_label: model_category
+
+  # =============================================================================
+  # SYSTEM MONITORING
+  # =============================================================================
+  
+  # Node Exporter for system metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    metrics_path: /metrics
+    scheme: http
+    metric_relabel_configs:
+      - target_label: service
+        replacement: 'system'
+      - target_label: component
+        replacement: 'host'
+
+  # NVIDIA GPU monitoring
+  - job_name: 'nvidia-gpu'
+    static_configs:
+      - targets: ['nvidia-gpu-exporter:9445']
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    metrics_path: /metrics
+    scheme: http
+    metric_relabel_configs:
+      - target_label: service
+        replacement: 'gpu'
+      - target_label: component
+        replacement: 'hardware'
+
+  # Docker container monitoring
+  - job_name: 'docker-containers'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 15s
+    scrape_timeout: 8s
+    metrics_path: /metrics
+    scheme: http
+    metric_relabel_configs:
+      - target_label: service
+        replacement: 'docker'
+      - target_label: component
+        replacement: 'containers'
+      # Extract container names
+      - source_labels: [container_label_com_docker_compose_service]
+        target_label: container_service
+      - source_labels: [container_label_com_docker_compose_project]
+        target_label: docker_project
+
+  # =============================================================================
+  # WEBSOCKET MONITORING
+  # =============================================================================
+  - job_name: 'websocket-connections'
+    static_configs:
+      - targets: ['app:8000']
+    scrape_interval: 5s
+    scrape_timeout: 3s
+    metrics_path: /ws/metrics
+    scheme: http
+    metric_relabel_configs:
+      - target_label: service
+        replacement: 'websocket'
+      - target_label: component
+        replacement: 'realtime'
+
+  # =============================================================================
+  # LEGAL AI SPECIFIC MONITORING
+  # =============================================================================
+  
+  # Document processing pipeline metrics
+  - job_name: 'document-processing'
+    static_configs:
+      - targets: ['app:8000']
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    metrics_path: /metrics/processing
+    scheme: http
+    params:
+      module: ['document_processor']
+    metric_relabel_configs:
+      - target_label: service
+        replacement: 'document_processing'
+      - target_label: component
+        replacement: 'pipeline'
+      # Add legal-specific labels
+      - source_labels: [document_type]
+        target_label: legal_doc_type
+      - source_labels: [case_id]
+        target_label: legal_case
+      - source_labels: [processing_stage]
+        target_label: pipeline_stage
+
+  # Search engine metrics
+  - job_name: 'search-engine'
+    static_configs:
+      - targets: ['app:8000']
+    scrape_interval: 8s
+    scrape_timeout: 4s
+    metrics_path: /metrics/search
+    scheme: http
+    params:
+      module: ['search_engine']
+    metric_relabel_configs:
+      - target_label: service
+        replacement: 'search_engine'
+      - target_label: component
+        replacement: 'query_processor'
+      # Add search-specific labels
+      - source_labels: [search_type]
+        target_label: query_type
+      - source_labels: [search_scope]
+        target_label: search_context
+
+  # Embedding generation metrics
+  - job_name: 'embedding-generation'
+    static_configs:
+      - targets: ['app:8000']
+    scrape_interval: 12s
+    scrape_timeout: 6s
+    metrics_path: /metrics/embeddings
+    scheme: http
+    params:
+      module: ['embedding_service']
+    metric_relabel_configs:
+      - target_label: service
+        replacement: 'embedding_generation'
+      - target_label: component
+        replacement: 'vectorization'
+      # Add embedding-specific labels
+      - source_labels: [embedding_model]
+        target_label: model_name
+      - source_labels: [chunk_size]
+        target_label: text_chunk_size
+
+  # Case management metrics
+  - job_name: 'case-management'
+    static_configs:
+      - targets: ['app:8000']
+    scrape_interval: 20s
+    scrape_timeout: 8s
+    metrics_path: /metrics/cases
+    scheme: http
+    params:
+      module: ['case_service']
+    metric_relabel_configs:
+      - target_label: service
+        replacement: 'case_management'
+      - target_label: component
+        replacement: 'business_logic'
+
+  # =============================================================================
+  # EXTERNAL INTEGRATIONS MONITORING
+  # =============================================================================
+  
+  # Alertmanager monitoring
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['alertmanager:9093']
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    metrics_path: /metrics
+    scheme: http
+
+  # Grafana monitoring
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    metrics_path: /metrics
+    scheme: http
+
+  # =============================================================================
+  # BLACKBOX MONITORING (Health Checks)
+  # =============================================================================
+  - job_name: 'blackbox-http'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://app:8000/health
+          - http://frontend:7860/
+          - http://weaviate:8080/v1/.well-known/ready
+          - http://ollama:11434/api/tags
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+    metric_relabel_configs:
+      - target_label: service
+        replacement: 'health_check'
+      - target_label: component
+        replacement: 'availability'
+
+  # =============================================================================
+  # DEVELOPMENT AND TESTING TARGETS
+  # =============================================================================
+  - job_name: 'development-metrics'
+    static_configs:
+      - targets: 
+          - 'app:8001'  # Development metrics endpoint
+    scrape_interval: 5s
+    scrape_timeout: 3s
+    metrics_path: /dev/metrics
+    scheme: http
+    metric_relabel_configs:
+      - target_label: service
+        replacement: 'development'
+      - target_label: component
+        replacement: 'debug'
+    # Only scrape in development environment
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '.*'
+        target_label: __tmp_environment
+        replacement: '${ENVIRONMENT:-development}'
+      - source_labels: [__tmp_environment]
+        regex: 'development'
+        action: keep
+
+# =============================================================================
+# REMOTE WRITE CONFIGURATION (Optional - for remote storage)
+# =============================================================================
+# remote_write:
+#   - url: "https://prometheus-remote-write-endpoint/api/v1/write"
+#     write_relabel_configs:
+#       - source_labels: [__name__]
+#         regex: 'legal_.*|document_.*|search_.*|case_.*'
+#         action: keep
+
+# =============================================================================
+# REMOTE READ CONFIGURATION (Optional - for remote queries)
+# =============================================================================
+# remote_read:
+#   - url: "https://prometheus-remote-read-endpoint/api/v1/read"
+#     read_recent: true
+
+# =============================================================================
+# STORAGE CONFIGURATION
+# =============================================================================
+storage:
+  tsdb:
+    # Retention time for metrics
+    retention.time: 30d
+    # Maximum size of storage
+    retention.size: 10GB
+    # Compression settings
+    compression: snappy
+    # Block duration
+    min_block_duration: 2h
+    max_block_duration: 36h

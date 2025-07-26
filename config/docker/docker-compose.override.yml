@@ -1,0 +1,524 @@
+# Docker Compose Override for Development Environment
+# This file provides development-specific overrides for the base docker-compose.yml
+# It includes enhanced debugging, hot-reload, exposed ports, and development optimizations
+# for the Patexia Legal AI Chatbot development workflow.
+
+version: "3.8"
+
+services:
+  # =============================================================================
+  # APPLICATION SERVICE - Development Overrides
+  # =============================================================================
+  app:
+    build:
+      context: ../../
+      dockerfile: Dockerfile.dev
+      args:
+        - PYTHON_VERSION=3.13
+        - INSTALL_DEV_DEPS=true
+        - ENABLE_DEBUGGER=true
+    environment:
+      # Development environment variables
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - PYTHONPATH=/app
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      
+      # Database connections for development
+      - MONGODB_URI=mongodb://mongodb:27017/patexia_legal_ai_dev
+      - WEAVIATE_URL=http://weaviate:8080
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - NEO4J_URI=bolt://neo4j:7687
+      
+      # Development-specific settings
+      - ENABLE_HOT_RELOAD=true
+      - ENABLE_DEBUG_MODE=true
+      - ENABLE_API_DOCS=true
+      - ENABLE_PROFILING=true
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:7860,http://localhost:8080
+      
+      # Development performance settings
+      - MAX_CONCURRENT_UPLOADS=3
+      - DOCUMENTS_PER_CASE=10
+      - CHUNK_SIZE=512
+      - EMBEDDING_BATCH_SIZE=16
+      
+    ports:
+      # Expose additional ports for development
+      - "8000:8000"    # FastAPI application
+      - "7860:7860"    # Gradio UI
+      - "5678:5678"    # Python debugger (debugpy)
+      - "8001:8001"    # Development metrics endpoint
+      
+    volumes:
+      # Mount source code for hot-reload
+      - ../../backend:/app/backend:rw
+      - ../../frontend:/app/frontend:rw
+      - ../../config:/app/config:rw
+      - ../../scripts:/app/scripts:rw
+      - ../../tests:/app/tests:rw
+      
+      # Development-specific volumes
+      - ../../logs:/app/logs:rw
+      - ../../data/dev:/app/data:rw
+      - ../../temp:/app/temp:rw
+      
+      # Configuration hot-reload
+      - ../../backend/config:/app/backend/config:rw
+      
+      # Development tools and cache
+      - dev_venv:/app/.venv
+      - dev_cache:/app/.cache
+      - dev_pytest_cache:/app/.pytest_cache
+      
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      weaviate:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+        
+    restart: unless-stopped
+    
+    # Development resource limits (more lenient)
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '4.0'
+        reservations:
+          memory: 2G
+          cpus: '1.0'
+    
+    # Development networking
+    networks:
+      - patexia_dev_network
+    
+    # Health check for development
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # Development command with hot-reload
+    command: >
+      sh -c "
+        echo 'Starting Patexia Legal AI in development mode...' &&
+        pip install -e . &&
+        python -m debugpy --listen 0.0.0.0:5678 --wait-for-client -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/backend
+      "
+
+  # =============================================================================
+  # MONGODB SERVICE - Development Overrides
+  # =============================================================================
+  mongodb:
+    image: mongo:7.0
+    container_name: patexia_mongodb_dev
+    restart: unless-stopped
+    
+    environment:
+      # Development database settings
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=dev_password_123
+      - MONGO_INITDB_DATABASE=patexia_legal_ai_dev
+      
+    ports:
+      # Expose MongoDB port for development tools
+      - "27017:27017"
+      
+    volumes:
+      # Development data persistence
+      - mongodb_dev_data:/data/db
+      - mongodb_dev_config:/data/configdb
+      
+      # Development initialization scripts
+      - ../../scripts/mongodb/init-dev.js:/docker-entrypoint-initdb.d/init-dev.js:ro
+      - ../../scripts/mongodb/dev-indexes.js:/docker-entrypoint-initdb.d/dev-indexes.js:ro
+      
+      # Development backup location
+      - ../../backups/mongodb:/backups:rw
+      
+    # Development MongoDB configuration
+    command: >
+      mongod 
+      --auth 
+      --bind_ip_all 
+      --logpath /var/log/mongodb/mongod.log 
+      --logappend 
+      --journalCommit 50
+      --syncdelay 60
+      --wiredTigerCacheSizeGB 2
+      
+    networks:
+      - patexia_dev_network
+      
+    # Health check for MongoDB
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.admin.command('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # =============================================================================
+  # WEAVIATE SERVICE - Development Overrides  
+  # =============================================================================
+  weaviate:
+    image: semitechnologies/weaviate:1.22.4
+    container_name: patexia_weaviate_dev
+    restart: unless-stopped
+    
+    environment:
+      # Development Weaviate configuration
+      - QUERY_DEFAULTS_LIMIT=25
+      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
+      - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+      - DEFAULT_VECTORIZER_MODULE=none
+      - ENABLE_MODULES=backup-filesystem,text2vec-openai,text2vec-cohere,text2vec-huggingface
+      - CLUSTER_HOSTNAME=node1
+      - BACKUP_FILESYSTEM_PATH=/var/lib/weaviate/backups
+      
+      # Development performance settings
+      - QUERY_MAXIMUM_RESULTS=1000
+      - TRACK_VECTOR_DIMENSIONS=true
+      - GO_MEMORY_LIMIT=4GiB
+      
+    ports:
+      # Expose Weaviate ports for development
+      - "8080:8080"    # HTTP API
+      - "50051:50051"  # gRPC API
+      
+    volumes:
+      # Development data persistence
+      - weaviate_dev_data:/var/lib/weaviate
+      - weaviate_dev_backups:/var/lib/weaviate/backups
+      
+      # Development configuration
+      - ../../config/weaviate/dev-config.yaml:/weaviate.conf.yaml:ro
+      
+    networks:
+      - patexia_dev_network
+      
+    # Health check for Weaviate
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/v1/.well-known/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # =============================================================================
+  # OLLAMA SERVICE - Development Overrides
+  # =============================================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: patexia_ollama_dev
+    restart: unless-stopped
+    
+    environment:
+      # Development Ollama settings
+      - OLLAMA_DEBUG=1
+      - OLLAMA_VERBOSE=1
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_KEEP_ALIVE=10m
+      - OLLAMA_NUM_PARALLEL=2
+      - OLLAMA_MAX_LOADED_MODELS=3
+      
+      # GPU settings for development
+      - CUDA_VISIBLE_DEVICES=0
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      
+    ports:
+      # Expose Ollama port for development
+      - "11434:11434"
+      
+    volumes:
+      # Development model storage
+      - ollama_dev_models:/root/.ollama
+      
+      # Development scripts for model management
+      - ../../scripts/ollama:/scripts:ro
+      
+    networks:
+      - patexia_dev_network
+      
+    # GPU support for development
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    
+    # Health check for Ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 120s
+
+  # =============================================================================
+  # NEO4J SERVICE - Development (Phase 2)
+  # =============================================================================
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: patexia_neo4j_dev
+    restart: unless-stopped
+    
+    environment:
+      # Development Neo4j settings
+      - NEO4J_AUTH=neo4j/dev_password_123
+      - NEO4J_dbms_security_procedures_unrestricted=gds.*,apoc.*
+      - NEO4J_dbms_security_procedures_allowlist=gds.*,apoc.*
+      - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+      
+      # Development performance settings  
+      - NEO4J_dbms_memory_heap_initial_size=1G
+      - NEO4J_dbms_memory_heap_max_size=2G
+      - NEO4J_dbms_memory_pagecache_size=1G
+      
+    ports:
+      # Expose Neo4j ports for development
+      - "7474:7474"    # HTTP
+      - "7687:7687"    # Bolt
+      
+    volumes:
+      # Development data persistence
+      - neo4j_dev_data:/data
+      - neo4j_dev_logs:/logs
+      - neo4j_dev_import:/var/lib/neo4j/import
+      - neo4j_dev_plugins:/plugins
+      
+      # Development initialization scripts
+      - ../../scripts/neo4j/dev-setup.cypher:/var/lib/neo4j/import/dev-setup.cypher:ro
+      
+    networks:
+      - patexia_dev_network
+      
+    # Health check for Neo4j
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "dev_password_123", "RETURN 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # =============================================================================
+  # REDIS SERVICE - Development Caching
+  # =============================================================================
+  redis:
+    image: redis:7.2-alpine
+    container_name: patexia_redis_dev
+    restart: unless-stopped
+    
+    environment:
+      - REDIS_PASSWORD=dev_cache_password
+      
+    ports:
+      - "6379:6379"
+      
+    volumes:
+      - redis_dev_data:/data
+      - ../../config/redis/dev-redis.conf:/usr/local/etc/redis/redis.conf:ro
+      
+    command: >
+      redis-server /usr/local/etc/redis/redis.conf
+      --requirepass dev_cache_password
+      --maxmemory 1gb
+      --maxmemory-policy allkeys-lru
+      
+    networks:
+      - patexia_dev_network
+      
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "dev_cache_password", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # DEVELOPMENT TOOLS & UTILITIES
+  # =============================================================================
+  
+  # MongoDB Express - Database Admin UI
+  mongo-express:
+    image: mongo-express:1.0.0-alpha
+    container_name: patexia_mongo_express_dev
+    restart: unless-stopped
+    
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=dev_password_123
+      - ME_CONFIG_MONGODB_URL=mongodb://admin:dev_password_123@mongodb:27017/
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=dev_admin_123
+      
+    ports:
+      - "8081:8081"
+      
+    depends_on:
+      - mongodb
+      
+    networks:
+      - patexia_dev_network
+
+  # Development File Browser
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    container_name: patexia_filebrowser_dev
+    restart: unless-stopped
+    
+    environment:
+      - FB_BASEURL=/files
+      
+    ports:
+      - "8082:80"
+      
+    volumes:
+      - ../../:/srv:rw
+      - filebrowser_config:/config
+      
+    command: >
+      --noauth
+      --address 0.0.0.0
+      --port 80
+      --root /srv
+      
+    networks:
+      - patexia_dev_network
+
+  # Prometheus - Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: patexia_prometheus_dev
+    restart: unless-stopped
+    
+    ports:
+      - "9090:9090"
+      
+    volumes:
+      - ../../config/prometheus/dev-prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_dev_data:/prometheus
+      
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      
+    networks:
+      - patexia_dev_network
+
+  # Grafana - Metrics Visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: patexia_grafana_dev
+    restart: unless-stopped
+    
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=dev_grafana_123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      
+    ports:
+      - "3000:3000"
+      
+    volumes:
+      - grafana_dev_data:/var/lib/grafana
+      - ../../config/grafana/dev-dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../../config/grafana/dev-datasources:/etc/grafana/provisioning/datasources:ro
+      
+    depends_on:
+      - prometheus
+      
+    networks:
+      - patexia_dev_network
+
+# =============================================================================
+# DEVELOPMENT VOLUMES
+# =============================================================================
+volumes:
+  # Application development volumes
+  dev_venv:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ../../.venv
+      
+  dev_cache:
+    driver: local
+    
+  dev_pytest_cache:
+    driver: local
+
+  # Database development volumes
+  mongodb_dev_data:
+    driver: local
+    driver_opts:
+      type: none  
+      o: bind
+      device: ../../data/dev/mongodb
+      
+  mongodb_dev_config:
+    driver: local
+
+  weaviate_dev_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ../../data/dev/weaviate
+      
+  weaviate_dev_backups:
+    driver: local
+
+  ollama_dev_models:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ../../data/dev/ollama
+      
+  neo4j_dev_data:
+    driver: local
+  neo4j_dev_logs:
+    driver: local
+  neo4j_dev_import:
+    driver: local
+  neo4j_dev_plugins:
+    driver: local
+
+  # Cache and utility volumes
+  redis_dev_data:
+    driver: local
+    
+  filebrowser_config:
+    driver: local
+    
+  prometheus_dev_data:
+    driver: local
+    
+  grafana_dev_data:
+    driver: local
+
+# =============================================================================
+# DEVELOPMENT NETWORK
+# =============================================================================
+networks:
+  patexia_dev_network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: patexia_dev_br
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
