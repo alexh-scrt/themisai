@@ -55,7 +55,7 @@ import tempfile
 import aiofiles
 import mimetypes
 
-from config.settings import get_settings
+from backend.config.settings import get_settings
 from ..core.websocket_manager import WebSocketManager
 from ..models.domain.document import (
     LegalDocument, DocumentType, ProcessingStatus, DocumentPriority,

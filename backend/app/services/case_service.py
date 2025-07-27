@@ -47,7 +47,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 from dataclasses import dataclass
 from enum import Enum
 
-from config.settings import get_settings
+from backend.config.settings import get_settings
 from ..core.websocket_manager import WebSocketManager
 from ..core.database import get_database_manager
 from ..models.domain.case import (

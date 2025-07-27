@@ -702,3 +702,378 @@ def log_configuration_change(
         user_id=user_id,
         event_type="config_change"
     )
+
+def log_business_event(
+    event_type: str,
+    request: Optional[Any] = None,
+    user_id: Optional[str] = None,
+    case_id: Optional[str] = None,
+    document_id: Optional[str] = None,
+    **context: Any
+) -> None:
+    """
+    Log business logic events with structured context.
+    
+    This function logs important business events that occur during the application
+    lifecycle, such as case creation, document processing, search operations,
+    and administrative actions. It provides structured logging for business
+    intelligence, audit trails, and operational monitoring.
+    
+    Args:
+        event_type: Type of business event (e.g., "case_created", "document_uploaded")
+        request: Optional FastAPI Request object for automatic context extraction
+        user_id: Optional user identifier associated with the event
+        case_id: Optional case identifier associated with the event
+        document_id: Optional document identifier associated with the event
+        **context: Additional context data for the event
+        
+    Usage:
+        # Simple business event
+        log_business_event("case_created", case_id="CASE_123", user_id="user456")
+        
+        # With request context
+        log_business_event("document_uploaded", request, document_id="doc789")
+        
+        # With rich context
+        log_business_event(
+            "search_performed",
+            request=request,
+            query="patent claims",
+            result_count=25,
+            search_type="semantic"
+        )
+    """
+    business_logger = get_logger("business")
+    
+    # Build event context
+    event_context = {
+        "event_type": event_type,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    }
+    
+    # Extract context from request if provided
+    if request is not None:
+        try:
+            # Handle both FastAPI Request and other request-like objects
+            if hasattr(request, 'url'):
+                event_context["request_path"] = str(request.url.path)
+                event_context["request_method"] = getattr(request, 'method', 'UNKNOWN')
+            
+            if hasattr(request, 'client'):
+                event_context["client_ip"] = getattr(request.client, 'host', 'unknown')
+            
+            if hasattr(request, 'headers'):
+                user_agent = request.headers.get('user-agent', 'unknown')
+                event_context["user_agent"] = user_agent[:100]  # Truncate long user agents
+            
+            # Extract user context from request state if available
+            if hasattr(request, 'state'):
+                if hasattr(request.state, 'user_id') and not user_id:
+                    user_id = request.state.user_id
+                if hasattr(request.state, 'correlation_id'):
+                    event_context["correlation_id"] = request.state.correlation_id
+        except Exception as e:
+            # If request context extraction fails, log but don't fail the event
+            business_logger.warning(
+                "Failed to extract request context for business event",
+                event_type=event_type,
+                error=str(e)
+            )
+    
+    # Add user/case/document identifiers
+    if user_id:
+        event_context["user_id"] = user_id
+    if case_id:
+        event_context["case_id"] = case_id
+    if document_id:
+        event_context["document_id"] = document_id
+    
+    # Add correlation ID if available
+    correlation_id = get_correlation_id()
+    if correlation_id and "correlation_id" not in event_context:
+        event_context["correlation_id"] = correlation_id
+    
+    # Add custom context
+    event_context.update(context)
+    
+    # Log the business event
+    business_logger.info(
+        f"Business event: {event_type}",
+        **event_context
+    )
+
+
+def log_route_entry(
+    request: Any,
+    endpoint_name: Optional[str] = None,
+    **context: Any
+) -> None:
+    """
+    Log API route entry with request context.
+    
+    Args:
+        request: FastAPI Request object
+        endpoint_name: Optional endpoint name override
+        **context: Additional context for the log entry
+    """
+    route_logger = get_logger("routes")
+    
+    route_context = {
+        "route_event": "entry",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    }
+    
+    # Extract request information
+    try:
+        if hasattr(request, 'url'):
+            route_context["path"] = str(request.url.path)
+            route_context["query_params"] = str(request.url.query) if request.url.query else None
+        
+        if hasattr(request, 'method'):
+            route_context["method"] = request.method
+        
+        if hasattr(request, 'client'):
+            route_context["client_ip"] = getattr(request.client, 'host', 'unknown')
+        
+        if endpoint_name:
+            route_context["endpoint"] = endpoint_name
+        
+        # Add correlation ID
+        correlation_id = get_correlation_id()
+        if correlation_id:
+            route_context["correlation_id"] = correlation_id
+    except Exception as e:
+        route_logger.warning("Failed to extract route entry context", error=str(e))
+    
+    # Add custom context
+    route_context.update(context)
+    
+    route_logger.info("Route handler entered", **route_context)
+
+
+def log_route_exit(
+    request: Any,
+    result: Any = None,
+    status_code: Optional[int] = None,
+    endpoint_name: Optional[str] = None,
+    **context: Any
+) -> None:
+    """
+    Log API route exit with response context.
+    
+    Args:
+        request: FastAPI Request object
+        result: Optional response result
+        status_code: HTTP status code
+        endpoint_name: Optional endpoint name override
+        **context: Additional context for the log entry
+    """
+    route_logger = get_logger("routes")
+    
+    route_context = {
+        "route_event": "exit",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    }
+    
+    # Extract request information
+    try:
+        if hasattr(request, 'url'):
+            route_context["path"] = str(request.url.path)
+        
+        if hasattr(request, 'method'):
+            route_context["method"] = request.method
+        
+        if endpoint_name:
+            route_context["endpoint"] = endpoint_name
+        
+        if status_code:
+            route_context["status_code"] = status_code
+        
+        if result is not None:
+            route_context["result_type"] = type(result).__name__
+            # Add result size if it's a collection
+            if hasattr(result, '__len__'):
+                try:
+                    route_context["result_count"] = len(result)
+                except:
+                    pass
+        
+        # Add correlation ID
+        correlation_id = get_correlation_id()
+        if correlation_id:
+            route_context["correlation_id"] = correlation_id
+    except Exception as e:
+        route_logger.warning("Failed to extract route exit context", error=str(e))
+    
+    # Add custom context
+    route_context.update(context)
+    
+    route_logger.info("Route handler completed", **route_context)
+
+
+
+def log_search_operation(
+    event_type: str,
+    query: str,
+    case_id: Optional[str] = None,
+    search_type: Optional[str] = None,
+    result_count: Optional[int] = None,
+    execution_time_ms: Optional[float] = None,
+    **context: Any
+) -> None:
+    """
+    Log search operation events with query context.
+    
+    Args:
+        event_type: Type of search event (e.g., "started", "completed", "failed")
+        query: Search query string
+        case_id: Optional case identifier
+        search_type: Type of search (e.g., "semantic", "keyword", "hybrid")
+        result_count: Number of results returned
+        execution_time_ms: Search execution time in milliseconds
+        **context: Additional context for the search event
+    """
+    search_logger = get_logger("search")
+    
+    search_context = {
+        "event_type": event_type,
+        "query": query[:200],  # Truncate very long queries
+        "query_length": len(query),
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    }
+    
+    if case_id:
+        search_context["case_id"] = case_id
+    if search_type:
+        search_context["search_type"] = search_type
+    if result_count is not None:
+        search_context["result_count"] = result_count
+    if execution_time_ms is not None:
+        search_context["execution_time_ms"] = execution_time_ms
+    
+    # Add correlation ID
+    correlation_id = get_correlation_id()
+    if correlation_id:
+        search_context["correlation_id"] = correlation_id
+    
+    # Add custom context
+    search_context.update(context)
+    
+    search_logger.info(
+        f"Search operation: {event_type}",
+        **search_context
+    )
+
+
+def log_security_event(
+    event_type: str,
+    user_id: Optional[str] = None,
+    resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
+    action: Optional[str] = None,
+    success: bool = True,
+    **context: Any
+) -> None:
+    """
+    Log security-related events for audit trails.
+    
+    Args:
+        event_type: Type of security event (e.g., "login", "access_denied", "permission_check")
+        user_id: User identifier
+        resource_type: Type of resource being accessed
+        resource_id: Specific resource identifier
+        action: Action being performed
+        success: Whether the security check/action succeeded
+        **context: Additional security context
+    """
+    security_logger = get_logger("security")
+    
+    security_context = {
+        "event_type": event_type,
+        "success": success,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    }
+    
+    if user_id:
+        security_context["user_id"] = user_id
+    if resource_type:
+        security_context["resource_type"] = resource_type
+    if resource_id:
+        security_context["resource_id"] = resource_id
+    if action:
+        security_context["action"] = action
+    
+    # Add correlation ID
+    correlation_id = get_correlation_id()
+    if correlation_id:
+        security_context["correlation_id"] = correlation_id
+    
+    # Add custom context
+    security_context.update(context)
+    
+    # Use appropriate log level based on event significance
+    if not success or event_type in ["access_denied", "authentication_failed"]:
+        security_logger.warning(
+            f"Security event: {event_type}",
+            **security_context
+        )
+    else:
+        security_logger.info(
+            f"Security event: {event_type}",
+            **security_context
+        )
+
+
+def log_performance_metric(
+    operation: str,
+    duration_ms: float,
+    success: bool = True,
+    error: Optional[str] = None,
+    **context: Any
+) -> None:
+    """
+    Log performance metrics for monitoring and analysis.
+    
+    Args:
+        operation: Name of the operation being measured
+        duration_ms: Operation duration in milliseconds
+        success: Whether the operation succeeded
+        error: Error message if operation failed
+        **context: Additional performance context
+    """
+    perf_logger = get_logger("performance")
+    
+    perf_context = {
+        "operation": operation,
+        "duration_ms": duration_ms,
+        "success": success,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    }
+    
+    if error:
+        perf_context["error"] = error
+    
+    # Add correlation ID
+    correlation_id = get_correlation_id()
+    if correlation_id:
+        perf_context["correlation_id"] = correlation_id
+    
+    # Add custom context
+    perf_context.update(context)
+    
+    # Log with appropriate level based on performance thresholds
+    if duration_ms > 5000:  # Operations taking > 5 seconds
+        perf_logger.warning(
+            f"Slow operation: {operation}",
+            **perf_context
+        )
+    elif not success:
+        perf_logger.error(
+            f"Failed operation: {operation}",
+            **perf_context
+        )
+    else:
+        perf_logger.info(
+            f"Performance metric: {operation}",
+            **perf_context
+        )

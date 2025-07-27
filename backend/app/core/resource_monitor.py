@@ -68,7 +68,6 @@ except ImportError:
     logger = logging.getLogger(__name__)
     logger.warning("GPU monitoring libraries not available. Install nvidia-ml-py3 and GPUtil for GPU monitoring.")
 
-from .config import get_settings
 from .websocket_manager import WebSocketManager
 from ..utils.logging import get_logger
 

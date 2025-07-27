@@ -44,6 +44,7 @@ from llama_index.core import (
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.embeddings import BaseEmbedding
 from llama_index.core.vector_stores import VectorStore
+
 from llama_index.core.schema import TextNode, MetadataMode
 from llama_index.core.extractors import (
     TitleExtractor,
@@ -53,9 +54,9 @@ from llama_index.core.extractors import (
 from llama_index.readers.file import PDFReader
 from llama_index.vector_stores.weaviate import WeaviateVectorStore
 
-from config.settings import get_settings
-from ..core.ollama_client import OllamaEmbeddingService
-from ..core.websocket_manager import WebSocketManager
+from backend.config.settings import get_settings
+from backend.app.core.ollama_client import OllamaEmbeddingService
+from backend.app.core.websocket_manager import WebSocketManager
 from ..models.domain.document import (
     LegalDocument,
     ProcessingStatus,

@@ -70,11 +70,11 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from config.settings import get_settings
+from backend.config.settings import get_settings
 from ...core.websocket_manager import WebSocketManager, get_websocket_manager
-from ...services.document_service import DocumentService, DocumentOperationResult
+from backend.app.services.document_service import DocumentService
 from ...services.case_service import CaseService
-from ...models.api.document_schemas import (
+from backend.app.models.api.document_schemas import (
     DocumentUploadRequest,
     DocumentUploadResponse,
     DocumentResponse,
@@ -87,6 +87,11 @@ from ...models.api.document_schemas import (
     ApiResponse,
     ErrorResponse
 )
+from backend.app.models.api.common_schemas import (
+    ApiResponse,
+    ErrorResponse
+)
+
 from ...models.domain.document import (
     DocumentType,
     ProcessingStatus,
@@ -297,16 +302,16 @@ async def upload_document(
 )
 async def batch_upload_documents(
     request: Request,
+    background_tasks: BackgroundTasks,
+    document_service: DocumentService = Depends(get_document_service),
+    case_service: CaseService = Depends(get_case_service),
+    websocket_manager: WebSocketManager = Depends(get_websocket_manager),
     files: List[UploadFile] = File(..., description="Document files to upload"),
     case_id: str = Form(..., description="Case ID to associate documents with"),
     priority: DocumentPriority = Form(
         DocumentPriority.NORMAL,
         description="Processing priority level for all documents"
-    ),
-    background_tasks: BackgroundTasks,
-    document_service: DocumentService = Depends(get_document_service),
-    case_service: CaseService = Depends(get_case_service),
-    websocket_manager: WebSocketManager = Depends(get_websocket_manager)
+    )
 ) -> DocumentBatchResponse:
     """Upload multiple documents in batch."""
     log_route_entry(
@@ -605,10 +610,10 @@ async def list_documents_in_case(
 )
 async def update_document(
     request: Request,
-    document_id: str = FastAPIPath(..., description="Document identifier"),
-    update_request: DocumentUpdateRequest = Body(...),
     background_tasks: BackgroundTasks,
     document_service: DocumentService = Depends(get_document_service),
+    document_id: str = FastAPIPath(..., description="Document identifier"),
+    update_request: DocumentUpdateRequest = Body(...),
     websocket_manager: WebSocketManager = Depends(get_websocket_manager)
 ) -> ApiResponse:
     """Update document metadata."""
@@ -688,13 +693,13 @@ async def update_document(
 )
 async def delete_document(
     request: Request,
+    background_tasks: BackgroundTasks,
+    document_service: DocumentService = Depends(get_document_service),
     document_id: str = FastAPIPath(..., description="Document identifier"),
     confirm: bool = Query(
         False,
         description="Confirmation flag required for deletion"
     ),
-    background_tasks: BackgroundTasks,
-    document_service: DocumentService = Depends(get_document_service),
     websocket_manager: WebSocketManager = Depends(get_websocket_manager)
 ) -> ApiResponse:
     """Delete a document with confirmation."""
@@ -773,13 +778,13 @@ async def delete_document(
 )
 async def reprocess_document(
     request: Request,
+    background_tasks: BackgroundTasks,
+    document_service: DocumentService = Depends(get_document_service),
     document_id: str = FastAPIPath(..., description="Document identifier"),
     force: bool = Query(
         False,
         description="Force reprocessing even if already completed"
     ),
-    background_tasks: BackgroundTasks,
-    document_service: DocumentService = Depends(get_document_service),
     websocket_manager: WebSocketManager = Depends(get_websocket_manager)
 ) -> ApiResponse:
     """Reprocess a document."""

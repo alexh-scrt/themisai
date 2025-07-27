@@ -337,11 +337,11 @@ async def list_cases(
 )
 async def update_case(
     request: Request,
-    case_id: str = Path(..., description="Case identifier"),
-    update_request: CaseUpdateRequest = Body(...),
     background_tasks: BackgroundTasks,
     case_service: CaseService = Depends(get_case_service),
-    websocket_manager: WebSocketManager = Depends(get_websocket_manager)
+    websocket_manager: WebSocketManager = Depends(get_websocket_manager),
+    case_id: str = Path(..., description="Case identifier"),
+    update_request: CaseUpdateRequest = Body(...),
 ) -> ApiResponse:
     """Update case information."""
     log_route_entry(request, case_id=case_id)
@@ -417,12 +417,12 @@ async def update_case(
 )
 async def delete_case(
     request: Request,
+    background_tasks: BackgroundTasks,
     case_id: str = Path(..., description="Case identifier"),
     confirm: bool = Query(
         False,
         description="Confirmation flag required for deletion"
     ),
-    background_tasks: BackgroundTasks,
     case_service: CaseService = Depends(get_case_service),
     websocket_manager: WebSocketManager = Depends(get_websocket_manager)
 ) -> ApiResponse:
@@ -503,9 +503,9 @@ async def delete_case(
 )
 async def update_case_status(
     request: Request,
+    background_tasks: BackgroundTasks,
     case_id: str = Path(..., description="Case identifier"),
     status_request: CaseStatusUpdateRequest = Body(...),
-    background_tasks: BackgroundTasks,
     case_service: CaseService = Depends(get_case_service),
     websocket_manager: WebSocketManager = Depends(get_websocket_manager)
 ) -> ApiResponse:
@@ -597,13 +597,13 @@ async def update_case_status(
 )
 async def archive_case(
     request: Request,
+    background_tasks: BackgroundTasks,
     case_id: str = Path(..., description="Case identifier"),
     reason: Optional[str] = Body(
         None,
         description="Reason for archiving the case",
         max_length=500
     ),
-    background_tasks: BackgroundTasks,
     case_service: CaseService = Depends(get_case_service),
     websocket_manager: WebSocketManager = Depends(get_websocket_manager)
 ) -> ApiResponse:
@@ -836,9 +836,9 @@ async def get_available_visual_markers(
 )
 async def update_case_visual_marker(
     request: Request,
+    background_tasks: BackgroundTasks,
     case_id: str = Path(..., description="Case identifier"),
     visual_marker: VisualMarkerSchema = Body(...),
-    background_tasks: BackgroundTasks,
     case_service: CaseService = Depends(get_case_service),
     websocket_manager: WebSocketManager = Depends(get_websocket_manager)
 ) -> ApiResponse:

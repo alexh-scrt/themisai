@@ -49,6 +49,7 @@ class DocumentUploadRequest(BaseModel):
     )
     
     @validator('document_name')
+    @classmethod
     def validate_document_name(cls, v):
         """Validate and normalize document name."""
         if not v.strip():
@@ -312,6 +313,7 @@ class DocumentChunkSchema(BaseModel):
     )
     
     @root_validator
+    @classmethod
     def validate_char_positions(cls, values):
         """Validate character position consistency."""
         start_char = values.get('start_char', 0)
@@ -595,6 +597,7 @@ class DocumentListRequest(BaseModel):
     )
     
     @root_validator
+    @classmethod
     def validate_filters(cls, values):
         """Validate filter consistency."""
         created_after = values.get('created_after')
@@ -703,6 +706,7 @@ class DocumentUpdateRequest(BaseModel):
     )
     
     @validator('document_name')
+    @classmethod
     def validate_document_name(cls, v):
         """Validate document name if provided."""
         if v is not None and not v.strip():
@@ -1028,3 +1032,431 @@ class DocumentStatsResponse(BaseModel):
 DocumentCreateResponse = DocumentUploadResponse
 DocumentUpdateResponse = DocumentResponse
 DocumentDeleteResponse = Dict[str, Any]
+
+
+
+# Add these missing classes to backend/app/models/api/document_schemas.py
+
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Union
+from pydantic import BaseModel, Field, validator
+from enum import Enum
+
+# Import from common schemas for consistency
+from .common_schemas import ApiResponse, ErrorResponse, PaginatedResponse, MetadataInfo
+
+# Import domain models
+from ..domain.document import DocumentType, ProcessingStatus, DocumentPriority
+
+
+class DocumentAnalyticsResponse(BaseModel):
+    """Response schema for document analytics and metrics."""
+    
+    # Overall document metrics
+    total_documents: int = Field(
+        ...,
+        description="Total number of documents in the system",
+        ge=0
+    )
+    
+    documents_by_status: Dict[str, int] = Field(
+        ...,
+        description="Document count by processing status"
+    )
+    
+    documents_by_type: Dict[str, int] = Field(
+        ...,
+        description="Document count by document type"
+    )
+    
+    documents_by_priority: Dict[str, int] = Field(
+        ...,
+        description="Document count by priority level"
+    )
+    
+    # Processing metrics
+    processing_success_rate: float = Field(
+        ...,
+        description="Overall processing success rate (0.0 to 1.0)",
+        ge=0.0,
+        le=1.0
+    )
+    
+    average_processing_time_ms: float = Field(
+        ...,
+        description="Average document processing time in milliseconds",
+        ge=0.0
+    )
+    
+    failed_documents_count: int = Field(
+        ...,
+        description="Number of documents that failed processing",
+        ge=0
+    )
+    
+    pending_documents_count: int = Field(
+        ...,
+        description="Number of documents pending processing",
+        ge=0
+    )
+    
+    # Storage and size metrics
+    total_storage_bytes: int = Field(
+        ...,
+        description="Total storage used by documents in bytes",
+        ge=0
+    )
+    
+    average_document_size_bytes: float = Field(
+        ...,
+        description="Average document size in bytes",
+        ge=0.0
+    )
+    
+    largest_document_size_bytes: int = Field(
+        ...,
+        description="Size of the largest document in bytes",
+        ge=0
+    )
+    
+    # Time-based metrics
+    documents_uploaded_today: int = Field(
+        ...,
+        description="Number of documents uploaded today",
+        ge=0
+    )
+    
+    documents_uploaded_this_week: int = Field(
+        ...,
+        description="Number of documents uploaded this week",
+        ge=0
+    )
+    
+    documents_uploaded_this_month: int = Field(
+        ...,
+        description="Number of documents uploaded this month",
+        ge=0
+    )
+    
+    # Performance trends
+    recent_upload_trends: List[Dict[str, Any]] = Field(
+        ...,
+        description="Recent upload trends (daily/weekly data)"
+    )
+    
+    processing_performance_trends: List[Dict[str, Any]] = Field(
+        ...,
+        description="Processing performance trends over time"
+    )
+    
+    # Top performing metrics
+    most_common_document_types: List[Dict[str, Any]] = Field(
+        ...,
+        description="Most common document types with counts"
+    )
+    
+    slowest_processing_documents: List[Dict[str, Any]] = Field(
+        ...,
+        description="Documents that took longest to process"
+    )
+    
+    # Case-related metrics
+    documents_per_case_average: float = Field(
+        ...,
+        description="Average number of documents per case",
+        ge=0.0
+    )
+    
+    cases_with_most_documents: List[Dict[str, Any]] = Field(
+        ...,
+        description="Cases with the highest document counts"
+    )
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "total_documents": 1542,
+                "documents_by_status": {
+                    "completed": 1489,
+                    "processing": 12,
+                    "failed": 23,
+                    "pending": 18
+                },
+                "documents_by_type": {
+                    "pdf": 1203,
+                    "docx": 267,
+                    "txt": 72
+                },
+                "documents_by_priority": {
+                    "normal": 1234,
+                    "high": 234,
+                    "urgent": 74
+                },
+                "processing_success_rate": 0.965,
+                "average_processing_time_ms": 2340.5,
+                "failed_documents_count": 23,
+                "pending_documents_count": 18,
+                "total_storage_bytes": 15678234567,
+                "average_document_size_bytes": 10167456.7,
+                "largest_document_size_bytes": 67234567,
+                "documents_uploaded_today": 23,
+                "documents_uploaded_this_week": 156,
+                "documents_uploaded_this_month": 689
+            }
+        }
+
+
+class DocumentBatchRequest(BaseModel):
+    """Request schema for batch document operations."""
+    
+    operation_type: str = Field(
+        ...,
+        description="Type of batch operation (reprocess, delete, move, update_metadata, etc.)"
+    )
+    
+    document_ids: List[str] = Field(
+        ...,
+        description="List of document IDs to process",
+        min_items=1,
+        max_items=100  # Reasonable batch size limit
+    )
+    
+    target_case_id: Optional[str] = Field(
+        None,
+        description="Target case ID for move operations"
+    )
+    
+    new_priority: Optional[DocumentPriority] = Field(
+        None,
+        description="New priority for update operations"
+    )
+    
+    metadata_updates: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Metadata updates to apply"
+    )
+    
+    processing_options: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Processing options for reprocess operations"
+    )
+    
+    force_operation: bool = Field(
+        default=False,
+        description="Force operation even if documents are in use"
+    )
+    
+    notify_on_completion: bool = Field(
+        default=True,
+        description="Send notification when batch operation completes"
+    )
+    
+    reason: Optional[str] = Field(
+        None,
+        description="Reason for the batch operation (for audit trail)",
+        max_length=500
+    )
+    
+    @validator('operation_type')
+    @classmethod
+    def validate_operation_type(cls, v):
+        """Validate operation type."""
+        valid_operations = {
+            'reprocess', 'delete', 'move', 'update_metadata', 
+            'change_priority', 'archive', 'restore', 'export'
+        }
+        if v not in valid_operations:
+            raise ValueError(f'Operation type must be one of: {", ".join(valid_operations)}')
+        return v
+    
+    @validator('document_ids')
+    @classmethod
+    def validate_document_ids(cls, v):
+        """Validate document IDs."""
+        if len(v) != len(set(v)):
+            raise ValueError('Document IDs must be unique')
+        return v
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "operation_type": "reprocess",
+                "document_ids": [
+                    "doc_123456789",
+                    "doc_987654321",
+                    "doc_456789123"
+                ],
+                "processing_options": {
+                    "force_ocr": True,
+                    "skip_embedding": False
+                },
+                "notify_on_completion": True,
+                "reason": "Reprocessing with updated OCR settings"
+            }
+        }
+
+
+class DocumentBatchOperationResult(BaseModel):
+    """Result for a single document in a batch operation."""
+    
+    document_id: str = Field(
+        ...,
+        description="Document ID"
+    )
+    
+    success: bool = Field(
+        ...,
+        description="Whether the operation succeeded for this document"
+    )
+    
+    message: Optional[str] = Field(
+        None,
+        description="Success or error message for this document"
+    )
+    
+    error_code: Optional[str] = Field(
+        None,
+        description="Error code if operation failed"
+    )
+    
+    processing_time_ms: Optional[float] = Field(
+        None,
+        description="Time taken to process this document",
+        ge=0.0
+    )
+    
+    metadata: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Additional metadata about the operation result"
+    )
+
+
+class DocumentBatchResponse(BaseModel):
+    """Response schema for batch document operations."""
+    
+    batch_id: str = Field(
+        ...,
+        description="Unique identifier for this batch operation"
+    )
+    
+    operation_type: str = Field(
+        ...,
+        description="Type of batch operation performed"
+    )
+    
+    total_documents: int = Field(
+        ...,
+        description="Total number of documents in the batch",
+        ge=0
+    )
+    
+    successful_operations: int = Field(
+        ...,
+        description="Number of successful operations",
+        ge=0
+    )
+    
+    failed_operations: int = Field(
+        ...,
+        description="Number of failed operations",
+        ge=0
+    )
+    
+    skipped_operations: int = Field(
+        default=0,
+        description="Number of skipped operations",
+        ge=0
+    )
+    
+    overall_success: bool = Field(
+        ...,
+        description="Whether the overall batch operation was successful"
+    )
+    
+    started_at: datetime = Field(
+        ...,
+        description="When the batch operation started"
+    )
+    
+    completed_at: Optional[datetime] = Field(
+        None,
+        description="When the batch operation completed"
+    )
+    
+    total_processing_time_ms: Optional[float] = Field(
+        None,
+        description="Total time for the batch operation",
+        ge=0.0
+    )
+    
+    results: List[DocumentBatchOperationResult] = Field(
+        ...,
+        description="Individual results for each document"
+    )
+    
+    summary_statistics: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Summary statistics for the batch operation"
+    )
+    
+    warnings: List[str] = Field(
+        default_factory=list,
+        description="Warnings generated during the batch operation"
+    )
+    
+    @validator('failed_operations', always=True)
+    @classmethod
+    def validate_failed_operations(cls, v, values):
+        """Validate failed operations count."""
+        total = values.get('total_documents', 0)
+        successful = values.get('successful_operations', 0)
+        skipped = values.get('skipped_operations', 0)
+        
+        if total > 0 and v != (total - successful - skipped):
+            raise ValueError("Failed operations count must equal total minus successful minus skipped")
+        return v
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "batch_id": "batch_abc123def456",
+                "operation_type": "reprocess",
+                "total_documents": 5,
+                "successful_operations": 4,
+                "failed_operations": 1,
+                "skipped_operations": 0,
+                "overall_success": False,
+                "started_at": "2025-01-15T10:30:00Z",
+                "completed_at": "2025-01-15T10:35:30Z",
+                "total_processing_time_ms": 330000,
+                "results": [
+                    {
+                        "document_id": "doc_123",
+                        "success": True,
+                        "message": "Document reprocessed successfully",
+                        "processing_time_ms": 2340.5
+                    },
+                    {
+                        "document_id": "doc_456",
+                        "success": False,
+                        "message": "Document not found",
+                        "error_code": "DOCUMENT_NOT_FOUND"
+                    }
+                ],
+                "warnings": [
+                    "Some documents took longer than expected to process"
+                ]
+            }
+        }
+
+
+# Re-export common schemas for convenience
+# This allows imports to work from document_schemas module
+__all__ = [
+    "DocumentAnalyticsResponse",
+    "DocumentBatchRequest", 
+    "DocumentBatchResponse",
+    "DocumentBatchOperationResult",
+    "ApiResponse",  # Re-exported from common_schemas
+    "ErrorResponse"  # Re-exported from common_schemas
+]

@@ -53,7 +53,8 @@ from typing import Any, Dict, List, Optional, Set, Callable, Union, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 from weakref import WeakSet
-
+import threading
+from typing import Optional
 from fastapi import WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 import asyncio
@@ -924,3 +925,173 @@ class WebSocketManager:
         """Close all WebSocket connections."""
         for connection_id in list(self.connections.keys()):
             await self.disconnect(connection_id, "Manager shutdown")
+
+# Add this function to the end of backend/app/core/websocket_manager.py
+# after the WebSocketManager class definition
+
+# Global WebSocket manager instance
+_websocket_manager_instance: Optional[WebSocketManager] = None
+_websocket_manager_lock = threading.Lock()
+
+
+def get_websocket_manager() -> WebSocketManager:
+    """
+    Get the global WebSocket manager instance (FastAPI dependency).
+    
+    This function provides a singleton WebSocket manager instance that can be
+    used as a FastAPI dependency for dependency injection. It ensures that
+    the same WebSocket manager is used across all route handlers and services.
+    
+    Returns:
+        WebSocketManager: The global WebSocket manager instance
+        
+    Raises:
+        RuntimeError: If the WebSocket manager has not been initialized
+        
+    Usage:
+        @router.post("/endpoint")
+        async def endpoint(
+            websocket_manager: WebSocketManager = Depends(get_websocket_manager)
+        ):
+            await websocket_manager.broadcast_to_all({"message": "Hello"})
+    """
+    global _websocket_manager_instance
+    
+    if _websocket_manager_instance is None:
+        raise RuntimeError(
+            "WebSocket manager not initialized. "
+            "Ensure the application startup process has been completed."
+        )
+    
+    return _websocket_manager_instance
+
+
+def set_websocket_manager(manager: WebSocketManager) -> None:
+    """
+    Set the global WebSocket manager instance.
+    
+    This function is typically called during application startup to set the
+    WebSocket manager instance that will be used throughout the application.
+    
+    Args:
+        manager: The WebSocket manager instance to set as global
+        
+    Thread Safety:
+        This function is thread-safe and uses a lock to prevent race conditions
+        during initialization.
+    """
+    global _websocket_manager_instance
+    
+    with _websocket_manager_lock:
+        _websocket_manager_instance = manager
+        logger.info("Global WebSocket manager instance set")
+
+
+async def initialize_websocket_manager(
+    max_connections_per_user: int = 5,
+    message_queue_size: int = 1000,
+    heartbeat_interval: int = 30,
+    connection_timeout: int = 300
+) -> WebSocketManager:
+    """
+    Initialize and return a new WebSocket manager instance.
+    
+    This function creates a new WebSocket manager with the specified configuration
+    and initializes it. It's typically called during application startup.
+    
+    Args:
+        max_connections_per_user: Maximum connections allowed per user
+        message_queue_size: Maximum size of the message queue
+        heartbeat_interval: Interval between heartbeat checks in seconds
+        connection_timeout: Connection timeout in seconds
+        
+    Returns:
+        WebSocketManager: Initialized WebSocket manager instance
+        
+    Raises:
+        RuntimeError: If initialization fails
+    """
+    try:
+        manager = WebSocketManager(
+            max_connections_per_user=max_connections_per_user,
+            message_queue_size=message_queue_size,
+            heartbeat_interval=heartbeat_interval,
+            connection_timeout=connection_timeout
+        )
+        
+        # Initialize the manager
+        await manager.initialize()
+        
+        # Set as global instance
+        set_websocket_manager(manager)
+        
+        logger.info(
+            "WebSocket manager initialized successfully",
+            max_connections_per_user=max_connections_per_user,
+            message_queue_size=message_queue_size,
+            heartbeat_interval=heartbeat_interval,
+            connection_timeout=connection_timeout
+        )
+        
+        return manager
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize WebSocket manager: {e}")
+        raise RuntimeError(f"WebSocket manager initialization failed: {e}")
+
+
+async def cleanup_websocket_manager() -> None:
+    """
+    Clean up the global WebSocket manager instance.
+    
+    This function is typically called during application shutdown to properly
+    clean up WebSocket connections and resources.
+    """
+    global _websocket_manager_instance
+    
+    if _websocket_manager_instance is not None:
+        try:
+            # Disconnect all connections gracefully
+            await _websocket_manager_instance.disconnect_all_users(
+                reason="Server shutdown"
+            )
+            
+            # Stop any background tasks
+            if hasattr(_websocket_manager_instance, 'stop'):
+                await _websocket_manager_instance.stop()
+            
+            logger.info("WebSocket manager cleaned up successfully")
+            
+        except Exception as e:
+            logger.error(f"Error during WebSocket manager cleanup: {e}")
+        finally:
+            with _websocket_manager_lock:
+                _websocket_manager_instance = None
+
+
+def get_websocket_manager_metrics() -> Optional[Dict[str, Any]]:
+    """
+    Get metrics from the WebSocket manager if available.
+    
+    Returns:
+        Optional[Dict[str, Any]]: WebSocket manager metrics or None if not available
+    """
+    if _websocket_manager_instance is not None:
+        try:
+            return _websocket_manager_instance.get_metrics().dict()
+        except Exception as e:
+            logger.error(f"Error getting WebSocket manager metrics: {e}")
+            return None
+    return None
+
+
+def is_websocket_manager_initialized() -> bool:
+    """
+    Check if the WebSocket manager has been initialized.
+    
+    Returns:
+        bool: True if WebSocket manager is initialized, False otherwise
+    """
+    return _websocket_manager_instance is not None
+
+

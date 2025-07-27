@@ -42,16 +42,14 @@ Legal Document Considerations:
 - Data privacy compliance in error reporting
 """
 
-import json
-import logging
 import time
 import traceback
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Union, Callable
+from typing import Any, Dict, Optional
 from enum import Enum
 
-from fastapi import FastAPI, Request, Response, HTTPException
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -59,15 +57,10 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import Response as StarletteResponse
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 from starlette.types import ASGIApp
-from pydantic import ValidationError
-import uvicorn.logging
 
 from ...core.exceptions import (
     BaseCustomException, ErrorCode, get_exception_response_data,
-    is_retryable_error, ConfigurationError, DatabaseError,
-    DocumentProcessingError, CaseManagementError, SearchError,
-    ModelError, WebSocketError, AuthenticationError, ResourceError,
-    ValidationError as CustomValidationError
+    is_retryable_error
 )
 from backend.config.settings import get_settings
 from backend.app.utils.logging import get_logger

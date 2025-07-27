@@ -53,8 +53,8 @@ from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
 from pydantic import BaseModel, Field, validator
 
-from config.settings import get_settings
-from ...core.websocket_manager import WebSocketManager, get_websocket_manager
+from backend.config.settings import get_settings
+from backend.app.core.websocket_manager import WebSocketManager, get_websocket_manager
 from ...core.resource_monitor import ResourceMonitor, get_resource_monitor
 from ...services.config_service import (
     ConfigurationService,
@@ -63,8 +63,8 @@ from ...services.config_service import (
     ConfigurationPriority,
     ServiceRestartRequirement
 )
-from ...models.api.common_schemas import ApiResponse, ErrorResponse
-from ...utils.logging import (
+from backend.app.models.api.common_schemas import ApiResponse, ErrorResponse
+from backend.app.utils.logging import (
     get_logger,
     performance_context,
     log_business_event,
@@ -77,7 +77,7 @@ from ...core.exceptions import (
     ErrorCode,
     get_exception_response_data
 )
-from ..deps import get_config_service
+from backend.app.api.deps import get_config_service
 
 
 logger = get_logger(__name__)
@@ -400,6 +400,9 @@ async def validate_configuration(
 )
 async def rollback_configuration(
     request: Request,
+    background_tasks: BackgroundTasks,
+    config_service: ConfigurationService = Depends(get_config_service),
+    websocket_manager: WebSocketManager = Depends(get_websocket_manager),
     steps: int = Body(
         1,
         description="Number of changes to rollback",
@@ -410,10 +413,7 @@ async def rollback_configuration(
         None,
         description="Reason for rollback",
         max_length=500
-    ),
-    background_tasks: BackgroundTasks,
-    config_service: ConfigurationService = Depends(get_config_service),
-    websocket_manager: WebSocketManager = Depends(get_websocket_manager)
+    )
 ) -> ApiResponse:
     """Rollback configuration to previous version."""
     log_business_event("admin_config_rollback", request, steps=steps, reason=reason)
@@ -578,9 +578,9 @@ async def list_configuration_templates(
 )
 async def apply_configuration_template(
     request: Request,
+    background_tasks: BackgroundTasks,
     template_name: str = Path(..., description="Name of template to apply"),
     template_request: ConfigurationTemplateRequest = Body(...),
-    background_tasks: BackgroundTasks,
     config_service: ConfigurationService = Depends(get_config_service),
     websocket_manager: WebSocketManager = Depends(get_websocket_manager)
 ) -> ApiResponse:
@@ -775,6 +775,7 @@ async def get_performance_metrics(
 )
 async def restart_services(
     request: Request,
+    background_tasks: BackgroundTasks,
     services: List[str] = Body(
         ["all"],
         description="List of services to restart ('all' for full restart)"
@@ -788,7 +789,6 @@ async def restart_services(
         False,
         description="Force restart without graceful shutdown"
     ),
-    background_tasks: BackgroundTasks,
     config_service: ConfigurationService = Depends(get_config_service),
     websocket_manager: WebSocketManager = Depends(get_websocket_manager)
 ) -> ApiResponse:
