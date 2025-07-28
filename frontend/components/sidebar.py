@@ -153,6 +153,251 @@ class DocumentUpload:
     completed_at: Optional[datetime] = None
 
 
+class SidebarComponent:
+    """
+    Wrapper component class for case navigation sidebar.
+    
+    This class provides the interface expected by main.py while wrapping
+    the existing CaseSidebar functionality. It handles component lifecycle,
+    event management, and integration with other UI components.
+    """
+    
+    def __init__(
+        self,
+        api_client: Optional[APIClient] = None,
+        websocket_client: Optional[WebSocketClient] = None
+    ):
+        """
+        Initialize sidebar component with API clients.
+        
+        Args:
+            api_client: API client for backend communication
+            websocket_client: WebSocket client for real-time updates
+        """
+        self.api_client = api_client or APIClient()
+        self.websocket_client = websocket_client or WebSocketClient()
+        self.logger = logging.getLogger(f"{__name__}.SidebarComponent")
+        
+        # Initialize the underlying sidebar functionality
+        self.sidebar = CaseSidebar(
+            api_client=self.api_client,
+            websocket_client=self.websocket_client
+        )
+        
+        # Event callbacks
+        self._case_selected_callbacks: List[Callable[[Optional[str]], None]] = []
+        self._document_uploaded_callbacks: List[Callable[[str, str], None]] = []
+        
+        # Component state
+        self.is_initialized = False
+        self.current_case_id: Optional[str] = None
+        
+        self.logger.info("SidebarComponent initialized")
+    
+    def create_component(self) -> gr.Column:
+        """
+        Create the sidebar Gradio component.
+        
+        Returns:
+            Gradio Column containing the complete sidebar interface
+        """
+        try:
+            # Create the main sidebar component using CaseSidebar
+            sidebar_component = self.sidebar.create_component()
+            
+            # Setup event handlers for the sidebar
+            self._setup_event_handlers()
+            
+            self.is_initialized = True
+            self.logger.info("Sidebar component created successfully")
+            
+            return sidebar_component
+            
+        except Exception as e:
+            self.logger.error(f"Failed to create sidebar component: {e}")
+            # Return a fallback component
+            return self._create_fallback_component()
+    
+    def _setup_event_handlers(self) -> None:
+        """Setup event handlers for sidebar interactions."""
+        try:
+            # Set case change callback
+            self.sidebar.set_case_change_callback(self._handle_case_selection)
+            
+            # Setup other event handlers
+            self.sidebar.on_case_created = self._handle_case_created
+            self.sidebar.on_document_uploaded = self._handle_document_uploaded
+            
+        except Exception as e:
+            self.logger.error(f"Failed to setup event handlers: {e}")
+    
+    def _handle_case_selection(self, case_id: Optional[str]) -> None:
+        """
+        Handle case selection events.
+        
+        Args:
+            case_id: ID of selected case or None if deselected
+        """
+        try:
+            self.current_case_id = case_id
+            
+            # Notify all registered callbacks
+            for callback in self._case_selected_callbacks:
+                try:
+                    callback(case_id)
+                except Exception as e:
+                    self.logger.error(f"Error in case selection callback: {e}")
+            
+            self.logger.info(f"Case selection handled: {case_id}")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to handle case selection: {e}")
+    
+    def _handle_case_created(self, case: LegalCase) -> None:
+        """
+        Handle case creation events.
+        
+        Args:
+            case: Newly created case
+        """
+        try:
+            self.logger.info(f"Case created: {case.case_name} ({case.case_id})")
+            
+            # Automatically select the new case
+            self._handle_case_selection(case.case_id)
+            
+        except Exception as e:
+            self.logger.error(f"Failed to handle case creation: {e}")
+    
+    def _handle_document_uploaded(self, case_id: str, document_id: str) -> None:
+        """
+        Handle document upload events.
+        
+        Args:
+            case_id: ID of the case
+            document_id: ID of uploaded document
+        """
+        try:
+            # Notify all registered callbacks
+            for callback in self._document_uploaded_callbacks:
+                try:
+                    callback(case_id, document_id)
+                except Exception as e:
+                    self.logger.error(f"Error in document upload callback: {e}")
+            
+            self.logger.info(f"Document upload handled: {document_id} in case {case_id}")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to handle document upload: {e}")
+    
+    def _create_fallback_component(self) -> gr.Column:
+        """
+        Create a fallback component when main sidebar fails.
+        
+        Returns:
+            Simple fallback sidebar component
+        """
+        with gr.Column(elem_id="sidebar-fallback") as fallback:
+            gr.Markdown("## ⚖️ Case Navigation")
+            gr.Markdown("*Sidebar temporarily unavailable*")
+            
+            gr.Button("Retry Connection", variant="secondary")
+            
+            gr.Markdown("### System Status")
+            gr.HTML("""
+                <div style="padding: 1rem; background: #fee; border-left: 4px solid #f00;">
+                    <strong>Connection Error</strong><br>
+                    Unable to connect to backend services.
+                    Please check your connection and try again.
+                </div>
+            """)
+        
+        return fallback
+    
+    # Public API methods for integration with other components
+    
+    def on_case_selected(self, callback: Callable[[Optional[str]], None]) -> None:
+        """
+        Register a callback for case selection events.
+        
+        Args:
+            callback: Function to call when case is selected/deselected
+        """
+        if callback not in self._case_selected_callbacks:
+            self._case_selected_callbacks.append(callback)
+            self.logger.debug("Case selection callback registered")
+    
+    def on_document_uploaded(self, callback: Callable[[str, str], None]) -> None:
+        """
+        Register a callback for document upload events.
+        
+        Args:
+            callback: Function to call when document is uploaded
+        """
+        if callback not in self._document_uploaded_callbacks:
+            self._document_uploaded_callbacks.append(callback)
+            self.logger.debug("Document upload callback registered")
+    
+    def get_current_case_id(self) -> Optional[str]:
+        """
+        Get the currently selected case ID.
+        
+        Returns:
+            Current case ID or None if no case selected
+        """
+        return self.current_case_id
+    
+    def select_case(self, case_id: str) -> None:
+        """
+        Programmatically select a case.
+        
+        Args:
+            case_id: ID of case to select
+        """
+        try:
+            self.sidebar.set_current_case(case_id)
+        except Exception as e:
+            self.logger.error(f"Failed to select case {case_id}: {e}")
+    
+    def refresh_cases(self) -> None:
+        """Refresh the cases list from backend."""
+        try:
+            asyncio.create_task(self.sidebar._load_initial_cases())
+        except Exception as e:
+            self.logger.error(f"Failed to refresh cases: {e}")
+    
+    def get_case_statistics(self) -> Dict[str, Any]:
+        """
+        Get current case statistics.
+        
+        Returns:
+            Dictionary with case statistics
+        """
+        try:
+            total_cases = len(self.sidebar.cases)
+            active_cases = len([
+                case for case in self.sidebar.cases.values()
+                if case.status == CaseStatus.ACTIVE
+            ])
+            processing_cases = len([
+                case for case in self.sidebar.cases.values()
+                if case.status == CaseStatus.PROCESSING
+            ])
+            total_documents = sum(case.document_count for case in self.sidebar.cases.values())
+            
+            return {
+                "total_cases": total_cases,
+                "active_cases": active_cases,
+                "processing_cases": processing_cases,
+                "total_documents": total_documents,
+                "current_case_id": self.current_case_id
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get case statistics: {e}")
+            return {}
+
+
 class CaseSidebar:
     """
     Case navigation sidebar component with comprehensive case management.
@@ -161,10 +406,14 @@ class CaseSidebar:
     with real-time WebSocket integration and visual case identification.
     """
     
-    def __init__(self):
+    def __init__(
+        self,
+        api_client: Optional[APIClient] = None,
+        websocket_client: Optional[WebSocketClient] = None
+    ):
         """Initialize sidebar with API clients and state management."""
-        self.api_client = APIClient()
-        self.websocket_client = WebSocketClient()
+        self.api_client = api_client or APIClient()
+        self.websocket_client = websocket_client or WebSocketClient()
         self.logger = logging.getLogger(f"{__name__}.CaseSidebar")
         
         # State management
@@ -172,6 +421,10 @@ class CaseSidebar:
         self.cases: Dict[str, LegalCase] = {}
         self.active_uploads: Dict[str, DocumentUpload] = {}
         self.case_change_callback: Optional[Callable[[Optional[str]], None]] = None
+        
+        # Event callbacks
+        self.on_case_created: Optional[Callable[[LegalCase], None]] = None
+        self.on_document_uploaded: Optional[Callable[[str, str], None]] = None
         
         # UI state
         self._case_creation_modal_visible: bool = False
@@ -193,31 +446,22 @@ class CaseSidebar:
         Returns:
             Gradio Column containing the complete sidebar interface
         """
-        with gr.Column(elem_id="case-sidebar", scale=1, min_width=280) as sidebar:
+        with gr.Column(elem_id="case-sidebar", scale=1) as sidebar:
             # Sidebar header
-            gr.Markdown("## 📁 Case Management", elem_id="sidebar-header")
+            gr.Markdown("## ⚖️ Case Navigation", elem_id="sidebar-header")
             
-            # New case button
-            self.new_case_button = gr.Button(
-                "➕ Create New Case",
-                variant="primary",
-                elem_id="new-case-button",
-                size="sm"
-            )
-            
-            # Case creation modal (initially hidden)
-            with gr.Column(visible=False, elem_id="case-creation-modal") as self.case_modal:
-                gr.Markdown("### Create New Legal Case")
-                
+            # Create new case section
+            with gr.Accordion("📝 Create New Case", open=False, elem_id="create-case-accordion"):
                 self.case_name_input = gr.Textbox(
+                    placeholder="Enter case name...",
                     label="Case Name",
-                    placeholder="e.g., Patent-2025-WiFi6-Dispute",
+                    max_lines=1,
                     elem_id="case-name-input"
                 )
                 
                 self.case_summary_input = gr.Textbox(
+                    placeholder="Brief case summary...",
                     label="Initial Summary",
-                    placeholder="Brief description of the case, key parties, and main legal issues...",
                     lines=3,
                     max_lines=5,
                     elem_id="case-summary-input"
@@ -225,42 +469,22 @@ class CaseSidebar:
                 
                 # Visual marker selection
                 with gr.Row(elem_id="visual-marker-row"):
-                    self.marker_color_radio = gr.Radio(
-                        choices=[
-                            ("🔴 Red (Urgent/Litigation)", "#e74c3c"),
-                            ("🟢 Green (Contract/Complete)", "#27ae60"),
-                            ("🔵 Blue (IP/Patent)", "#3498db"),
-                            ("🟠 Orange (Corporate/M&A)", "#f39c12"),
-                            ("🟣 Purple (Regulatory)", "#9b59b6"),
-                            ("🟡 Teal (Investigation)", "#1abc9c"),
-                            ("🟤 Dark Orange (Appeals)", "#e67e22"),
-                            ("⚫ Gray (Archive/Reference)", "#34495e")
-                        ],
-                        label="Color",
-                        value="#3498db",
-                        elem_id="marker-color"
+                    self.case_color_dropdown = gr.Dropdown(
+                        choices=[(f"🎨 {color}", color) for color in VisualMarker.COLORS],
+                        label="Case Color",
+                        value=VisualMarker.COLORS[0],
+                        elem_id="case-color"
                     )
                     
-                    self.marker_icon_dropdown = gr.Dropdown(
-                        choices=[
-                            ("📄 Document", "📄"),
-                            ("⚖️ Legal", "⚖️"),
-                            ("🏢 Corporate", "🏢"),
-                            ("💼 Business", "💼"),
-                            ("📋 Contract", "📋"),
-                            ("🔍 Investigation", "🔍"),
-                            ("⚡ Urgent", "⚡"),
-                            ("🎯 Priority", "🎯"),
-                            ("📊 Analytics", "📊"),
-                            ("🔒 Confidential", "🔒")
-                        ],
-                        label="Icon",
-                        value="📄",
-                        elem_id="marker-icon"
+                    self.case_icon_dropdown = gr.Dropdown(
+                        choices=[(f"{icon} {icon}", icon) for icon in VisualMarker.ICONS],
+                        label="Case Icon",
+                        value=VisualMarker.ICONS[0],
+                        elem_id="case-icon"
                     )
                 
-                # Modal buttons
-                with gr.Row(elem_id="modal-buttons"):
+                # Create case buttons
+                with gr.Row(elem_id="create-case-buttons"):
                     self.cancel_case_button = gr.Button(
                         "Cancel",
                         variant="secondary",
@@ -310,79 +534,37 @@ class CaseSidebar:
                 label="Select Documents",
                 file_count="multiple",
                 file_types=[".pdf", ".txt"],
-                interactive=False,
-                elem_id="file-upload"
+                elem_id="document-upload",
+                visible=False
             )
             
             # Upload progress
-            self.upload_progress = gr.Progress(
-                track_tqdm=True,
+            self.upload_progress = gr.HTML(
                 visible=False,
                 elem_id="upload-progress"
             )
             
-            # Upload progress display
-            self.upload_progress_display = gr.HTML(
-                visible=False,
-                elem_id="upload-progress-display"
-            )
-            
-            # Recent cases section
-            with gr.Accordion("Recent Cases", open=False, elem_id="recent-cases"):
-                self.recent_cases_list = gr.HTML(
-                    value="<div class='no-recent-cases'>No recent cases</div>",
-                    elem_id="recent-cases-list"
-                )
-                
-                with gr.Row():
-                    self.refresh_cases_button = gr.Button(
-                        "🔄 Refresh",
-                        size="sm",
-                        elem_id="refresh-cases-button"
-                    )
-                    self.archive_case_button = gr.Button(
-                        "📦 Archive Current",
-                        size="sm",
-                        elem_id="archive-case-button",
-                        interactive=False
-                    )
-        
-        # Setup event handlers
-        self._setup_event_handlers()
+            # Setup event handlers
+            self._setup_event_handlers()
         
         return sidebar
     
     def _setup_event_handlers(self) -> None:
-        """Setup all event handlers for the sidebar interface."""
-        
-        # Case creation modal
-        self.new_case_button.click(
-            fn=self._show_case_creation_modal,
-            inputs=[],
-            outputs=[self.case_modal, self.case_validation_message]
-        )
-        
-        self.cancel_case_button.click(
-            fn=self._hide_case_creation_modal,
-            inputs=[],
-            outputs=[self.case_modal, self.case_validation_message]
-        )
-        
+        """Setup Gradio event handlers for user interactions."""
+        # Case creation
         self.create_case_button.click(
-            fn=self._handle_case_creation,
+            fn=self._handle_create_case_click,
             inputs=[
                 self.case_name_input,
                 self.case_summary_input,
-                self.marker_color_radio,
-                self.marker_icon_dropdown
+                self.case_color_dropdown,
+                self.case_icon_dropdown
             ],
             outputs=[
-                self.case_modal,
-                self.case_validation_message,
                 self.cases_list,
-                self.case_stats,
-                self.upload_status,
-                self.file_upload
+                self.case_validation_message,
+                self.case_name_input,
+                self.case_summary_input
             ]
         )
         
@@ -390,491 +572,220 @@ class CaseSidebar:
         self.file_upload.upload(
             fn=self._handle_file_upload,
             inputs=[self.file_upload],
-            outputs=[
-                self.upload_status,
-                self.upload_progress_display,
-                self.cases_list,
-                self.case_stats
-            ]
-        )
-        
-        # Case management
-        self.refresh_cases_button.click(
-            fn=self._refresh_cases,
-            inputs=[],
-            outputs=[self.cases_list, self.recent_cases_list, self.case_stats]
-        )
-        
-        self.archive_case_button.click(
-            fn=self._archive_current_case,
-            inputs=[],
-            outputs=[
-                self.cases_list,
-                self.recent_cases_list,
-                self.case_stats,
-                self.archive_case_button
-            ]
+            outputs=[self.upload_progress, self.upload_status]
         )
     
-    def _show_case_creation_modal(self) -> Tuple[gr.Column, gr.Markdown]:
-        """
-        Show the case creation modal.
-        
-        Returns:
-            Updated modal visibility and cleared validation message
-        """
-        return gr.Column(visible=True), gr.Markdown(visible=False)
-    
-    def _hide_case_creation_modal(self) -> Tuple[gr.Column, gr.Markdown]:
-        """
-        Hide the case creation modal.
-        
-        Returns:
-            Updated modal visibility and cleared validation message
-        """
-        return gr.Column(visible=False), gr.Markdown(visible=False)
-    
-    async def _handle_case_creation(
+    def _handle_create_case_click(
         self,
         case_name: str,
         case_summary: str,
-        marker_color: str,
-        marker_icon: str
-    ) -> Tuple[gr.Column, gr.Markdown, str, str, str, gr.File]:
+        color: str,
+        icon: str
+    ) -> Tuple[str, str, str, str]:
         """
-        Handle case creation with validation and API call.
+        Handle case creation button click.
         
         Args:
             case_name: Name of the new case
-            case_summary: Initial case summary
-            marker_color: Selected color for visual marker
-            marker_icon: Selected icon for visual marker
+            case_summary: Summary description
+            color: Selected color
+            icon: Selected icon
             
         Returns:
-            Tuple of updated UI components
+            Tuple of (updated_cases_list, validation_message, cleared_name, cleared_summary)
         """
         try:
             # Validate inputs
-            validation_result = validate_case_name(case_name)
-            if not validation_result.is_valid:
+            if not case_name.strip():
                 return (
-                    gr.Column(visible=True),
-                    gr.Markdown(
-                        f"❌ **Validation Error:** {validation_result.error_message}",
-                        visible=True
-                    ),
                     self._render_cases_list(),
-                    self._render_case_stats(),
-                    self._get_upload_status(),
-                    gr.File(interactive=False)
+                    "❌ Case name is required",
+                    case_name,
+                    case_summary
                 )
             
-            if not case_summary.strip():
+            if len(case_name.strip()) < 3:
                 return (
-                    gr.Column(visible=True),
-                    gr.Markdown(
-                        "❌ **Validation Error:** Case summary is required",
-                        visible=True
-                    ),
                     self._render_cases_list(),
-                    self._render_case_stats(),
-                    self._get_upload_status(),
-                    gr.File(interactive=False)
+                    "❌ Case name must be at least 3 characters",
+                    case_name,
+                    case_summary
                 )
             
-            # Check visual marker availability
-            if not await self._is_visual_marker_available(marker_color, marker_icon):
+            # Check for duplicate case names
+            if any(case.case_name.lower() == case_name.lower() for case in self.cases.values()):
                 return (
-                    gr.Column(visible=True),
-                    gr.Markdown(
-                        "❌ **Validation Error:** This color and icon combination is already in use",
-                        visible=True
-                    ),
                     self._render_cases_list(),
-                    self._render_case_stats(),
-                    self._get_upload_status(),
-                    gr.File(interactive=False)
+                    "❌ A case with this name already exists",
+                    case_name,
+                    case_summary
                 )
             
-            # Create case via API
-            case_data = {
-                "case_name": case_name.strip(),
-                "initial_summary": case_summary.strip(),
-                "visual_marker": {
-                    "color": marker_color,
-                    "icon": marker_icon
-                }
-            }
+            # Create the case
+            case_id = str(uuid.uuid4())
+            visual_marker = VisualMarker(color=color, icon=icon)
             
-            response = await self.api_client.post("/api/v1/cases/", case_data)
-            
-            if response.get("success", False):
-                # Create case object
-                case_info = response["case"]
-                new_case = LegalCase(
-                    case_id=case_info["case_id"],
-                    case_name=case_info["case_name"],
-                    initial_summary=case_info["initial_summary"],
-                    visual_marker=VisualMarker(
-                        color=case_info["visual_marker"]["color"],
-                        icon=case_info["visual_marker"]["icon"]
-                    ),
-                    status=CaseStatus(case_info["status"]),
-                    created_at=datetime.fromisoformat(case_info["created_at"])
-                )
-                
-                # Add to local state
-                self.cases[new_case.case_id] = new_case
-                
-                # Set as current case
-                await self._set_current_case(new_case.case_id)
-                
-                self.logger.info(f"Case created successfully: {new_case.case_id}")
-                
-                return (
-                    gr.Column(visible=False),  # Hide modal
-                    gr.Markdown(visible=False),  # Clear validation message
-                    self._render_cases_list(),
-                    self._render_case_stats(),
-                    self._get_upload_status(),
-                    gr.File(interactive=True)  # Enable file upload
-                )
-            else:
-                error_message = response.get("error", "Unknown error occurred")
-                return (
-                    gr.Column(visible=True),
-                    gr.Markdown(
-                        f"❌ **Creation Error:** {error_message}",
-                        visible=True
-                    ),
-                    self._render_cases_list(),
-                    self._render_case_stats(),
-                    self._get_upload_status(),
-                    gr.File(interactive=False)
-                )
-                
-        except APIError as e:
-            self.logger.error(f"API error during case creation: {str(e)}")
-            return (
-                gr.Column(visible=True),
-                gr.Markdown(
-                    f"❌ **API Error:** {str(e)}",
-                    visible=True
-                ),
-                self._render_cases_list(),
-                self._render_case_stats(),
-                self._get_upload_status(),
-                gr.File(interactive=False)
+            new_case = LegalCase(
+                case_id=case_id,
+                case_name=case_name.strip(),
+                initial_summary=case_summary.strip() or "No summary provided",
+                visual_marker=visual_marker,
+                status=CaseStatus.ACTIVE
             )
-        except Exception as e:
-            self.logger.error(f"Unexpected error during case creation: {str(e)}")
+            
+            # Add to cases dictionary
+            self.cases[case_id] = new_case
+            
+            # Set as current case
+            self.set_current_case(case_id)
+            
+            # Trigger callback
+            if self.on_case_created:
+                self.on_case_created(new_case)
+            
+            # Send creation request to backend
+            asyncio.create_task(self._create_case_backend(new_case))
+            
+            self.logger.info(f"Case created: {case_name} ({case_id})")
+            
             return (
-                gr.Column(visible=True),
-                gr.Markdown(
-                    f"❌ **Error:** {str(e)}",
-                    visible=True
-                ),
                 self._render_cases_list(),
-                self._render_case_stats(),
-                self._get_upload_status(),
-                gr.File(interactive=False)
+                "✅ Case created successfully!",
+                "",  # Clear name input
+                ""   # Clear summary input
+            )
+            
+        except Exception as e:
+            self.logger.error(f"Failed to create case: {e}")
+            return (
+                self._render_cases_list(),
+                f"❌ Error creating case: {str(e)}",
+                case_name,
+                case_summary
             )
     
-    async def _handle_file_upload(
-        self,
-        files: List[Any]
-    ) -> Tuple[str, str, str, str]:
+    def _handle_file_upload(self, files) -> Tuple[str, str]:
         """
-        Handle file upload for the current case.
+        Handle file upload events.
         
         Args:
-            files: List of uploaded files
+            files: Uploaded files
             
         Returns:
-            Tuple of updated UI components
+            Tuple of (progress_html, status_message)
         """
-        if not self.current_case_id:
-            return (
-                "❌ No case selected for upload",
-                "",
-                self._render_cases_list(),
-                self._render_case_stats()
-            )
-        
-        if not files:
-            return (
-                "❌ No files selected",
-                "",
-                self._render_cases_list(),
-                self._render_case_stats()
-            )
-        
         try:
-            # Validate files
-            validated_files = []
-            total_size = 0
+            if not self.current_case_id:
+                return ("", "❌ Please select a case before uploading documents")
             
+            if not files:
+                return ("", "No files selected")
+            
+            # Process uploaded files
+            upload_tasks = []
             for file in files:
-                if hasattr(file, 'name') and hasattr(file, 'size'):
-                    file_size = getattr(file, 'size', 0)
-                    file_name = getattr(file, 'name', 'unknown')
-                    
-                    # Validate file type
-                    if not (file_name.endswith('.pdf') or file_name.endswith('.txt')):
-                        return (
-                            f"❌ Invalid file type: {file_name}. Only PDF and TXT files are supported.",
-                            "",
-                            self._render_cases_list(),
-                            self._render_case_stats()
-                        )
-                    
-                    # Validate file size (max 50MB per file)
-                    if file_size > 50 * 1024 * 1024:
-                        return (
-                            f"❌ File too large: {file_name}. Maximum file size is 50MB.",
-                            "",
-                            self._render_cases_list(),
-                            self._render_case_stats()
-                        )
-                    
-                    validated_files.append(file)
-                    total_size += file_size
-            
-            # Check total upload size (max 500MB total)
-            if total_size > 500 * 1024 * 1024:
-                return (
-                    f"❌ Total upload size too large: {format_file_size(total_size)}. Maximum total size is 500MB.",
-                    "",
-                    self._render_cases_list(),
-                    self._render_case_stats()
-                )
-            
-            # Start upload process
-            upload_id = str(uuid.uuid4())
-            upload_status = f"📤 Uploading {len(validated_files)} files ({format_file_size(total_size)})..."
-            
-            # Track upload
-            for file in validated_files:
-                file_upload = DocumentUpload(
-                    upload_id=f"{upload_id}_{file.name}",
+                upload_id = str(uuid.uuid4())
+                upload = DocumentUpload(
+                    upload_id=upload_id,
                     case_id=self.current_case_id,
                     filename=file.name,
-                    file_size=getattr(file, 'size', 0),
+                    file_size=0,  # Will be updated
                     status=DocumentUploadStatus.UPLOADING
                 )
-                self.active_uploads[file_upload.upload_id] = file_upload
+                
+                self.active_uploads[upload_id] = upload
+                upload_tasks.append(self._process_file_upload(file, upload))
             
-            # Start async upload
-            asyncio.create_task(self._execute_file_upload(validated_files, upload_id))
+            # Start processing uploads
+            for task in upload_tasks:
+                asyncio.create_task(task)
             
             progress_html = self._render_upload_progress()
+            status_message = f"📤 Uploading {len(files)} document(s)..."
             
-            return (
-                upload_status,
-                progress_html,
-                self._render_cases_list(),
-                self._render_case_stats()
-            )
+            return (progress_html, status_message)
             
         except Exception as e:
-            self.logger.error(f"Error handling file upload: {str(e)}")
-            return (
-                f"❌ Upload error: {str(e)}",
-                "",
-                self._render_cases_list(),
-                self._render_case_stats()
-            )
+            self.logger.error(f"File upload error: {e}")
+            return ("", f"❌ Upload error: {str(e)}")
     
-    async def _execute_file_upload(self, files: List[Any], upload_id: str) -> None:
-        """
-        Execute the actual file upload process asynchronously.
-        
-        Args:
-            files: List of files to upload
-            upload_id: Unique upload operation ID
-        """
+    async def _process_file_upload(self, file, upload: DocumentUpload) -> None:
+        """Process individual file upload."""
         try:
-            for file in files:
-                file_upload_id = f"{upload_id}_{file.name}"
-                
-                if file_upload_id in self.active_uploads:
-                    # Update status to uploading
-                    self.active_uploads[file_upload_id].status = DocumentUploadStatus.UPLOADING
-                    
-                    # Read file content
-                    file_content = file.read() if hasattr(file, 'read') else None
-                    if not file_content:
-                        # Handle file path case
-                        with open(file, 'rb') as f:
-                            file_content = f.read()
-                    
-                    # Prepare upload data
-                    upload_data = {
-                        "case_id": self.current_case_id,
-                        "filename": file.name,
-                        "file_size": len(file_content),
-                        "upload_id": file_upload_id
-                    }
-                    
-                    # Upload via API
-                    response = await self.api_client.post_file(
-                        "/api/v1/documents/upload",
-                        files={"file": (file.name, file_content)},
-                        data=upload_data
-                    )
-                    
-                    if response.get("success", False):
-                        # Update upload status
-                        self.active_uploads[file_upload_id].status = DocumentUploadStatus.PROCESSING
-                        self.active_uploads[file_upload_id].progress = 0.5
-                        
-                        self.logger.info(f"File uploaded successfully: {file.name}")
-                    else:
-                        # Handle upload failure
-                        error_message = response.get("error", "Upload failed")
-                        self.active_uploads[file_upload_id].status = DocumentUploadStatus.ERROR
-                        self.active_uploads[file_upload_id].error_message = error_message
-                        
-                        self.logger.error(f"File upload failed: {file.name} - {error_message}")
-                        
-        except Exception as e:
-            # Handle upload errors
-            for file in files:
-                file_upload_id = f"{upload_id}_{file.name}"
-                if file_upload_id in self.active_uploads:
-                    self.active_uploads[file_upload_id].status = DocumentUploadStatus.ERROR
-                    self.active_uploads[file_upload_id].error_message = str(e)
+            # Update upload status
+            upload.status = DocumentUploadStatus.PROCESSING
             
-            self.logger.error(f"Upload execution error: {str(e)}")
-    
-    async def _refresh_cases(self) -> Tuple[str, str, str]:
-        """
-        Refresh the cases list from the API.
-        
-        Returns:
-            Tuple of updated UI components
-        """
-        try:
-            await self._load_initial_cases()
-            return (
-                self._render_cases_list(),
-                self._render_recent_cases_list(),
-                self._render_case_stats()
-            )
-        except Exception as e:
-            self.logger.error(f"Error refreshing cases: {str(e)}")
-            return (
-                self._render_cases_list(),
-                self._render_recent_cases_list(),
-                self._render_case_stats()
-            )
-    
-    async def _archive_current_case(self) -> Tuple[str, str, str, gr.Button]:
-        """
-        Archive the current case.
-        
-        Returns:
-            Tuple of updated UI components
-        """
-        if not self.current_case_id:
-            return (
-                self._render_cases_list(),
-                self._render_recent_cases_list(),
-                self._render_case_stats(),
-                gr.Button(interactive=False)
-            )
-        
-        try:
-            response = await self.api_client.patch(
-                f"/api/v1/cases/{self.current_case_id}/archive",
-                {}
+            # Send file to backend
+            response = await self.api_client.post(
+                f"/api/v1/cases/{upload.case_id}/documents",
+                files={"file": file}
             )
             
-            if response.get("success", False):
-                # Update local state
-                if self.current_case_id in self.cases:
-                    self.cases[self.current_case_id].status = CaseStatus.ARCHIVED
+            if response.get("success"):
+                upload.status = DocumentUploadStatus.COMPLETED
+                upload.completed_at = datetime.now(timezone.utc)
                 
-                # Clear current case
-                await self._set_current_case(None)
-                
-                self.logger.info(f"Case archived: {self.current_case_id}")
-                
-                return (
-                    self._render_cases_list(),
-                    self._render_recent_cases_list(),
-                    self._render_case_stats(),
-                    gr.Button(interactive=False)
-                )
+                # Trigger callback
+                if self.on_document_uploaded:
+                    self.on_document_uploaded(upload.case_id, response.get("document_id"))
             else:
-                self.logger.error(f"Failed to archive case: {response.get('error', 'Unknown error')}")
-                
+                upload.status = DocumentUploadStatus.ERROR
+                upload.error_message = response.get("error", "Unknown error")
+            
         except Exception as e:
-            self.logger.error(f"Error archiving case: {str(e)}")
-        
-        return (
-            self._render_cases_list(),
-            self._render_recent_cases_list(),
-            self._render_case_stats(),
-            gr.Button(interactive=bool(self.current_case_id))
-        )
+            upload.status = DocumentUploadStatus.ERROR
+            upload.error_message = str(e)
+            self.logger.error(f"File processing error: {e}")
+    
+    async def _create_case_backend(self, case: LegalCase) -> None:
+        """Create case in backend."""
+        try:
+            await self.api_client.post("/api/v1/cases", {
+                "case_id": case.case_id,
+                "name": case.case_name,
+                "summary": case.initial_summary,
+                "visual_marker": {
+                    "color": case.visual_marker.color,
+                    "icon": case.visual_marker.icon
+                }
+            })
+        except Exception as e:
+            self.logger.error(f"Backend case creation failed: {e}")
     
     async def _load_initial_cases(self) -> None:
-        """Load initial cases from the API."""
+        """Load existing cases from backend."""
         try:
-            response = await self.api_client.get("/api/v1/cases/")
-            
-            if response.get("success", False):
+            response = await self.api_client.get("/api/v1/cases")
+            if response.get("success"):
                 cases_data = response.get("cases", [])
-                
-                # Convert to case objects
-                self.cases.clear()
                 for case_data in cases_data:
-                    case = LegalCase(
-                        case_id=case_data["case_id"],
-                        case_name=case_data["case_name"],
-                        initial_summary=case_data["initial_summary"],
-                        visual_marker=VisualMarker(
-                            color=case_data["visual_marker"]["color"],
-                            icon=case_data["visual_marker"]["icon"]
-                        ),
-                        status=CaseStatus(case_data["status"]),
-                        document_count=case_data.get("document_count", 0),
-                        processed_documents=case_data.get("processed_documents", 0),
-                        created_at=datetime.fromisoformat(case_data["created_at"]),
-                        updated_at=datetime.fromisoformat(case_data["updated_at"]),
-                        total_size_bytes=case_data.get("total_size_bytes", 0)
-                    )
-                    
-                    if case_data.get("last_activity"):
-                        case.last_activity = datetime.fromisoformat(case_data["last_activity"])
-                    
+                    case = self._deserialize_case(case_data)
                     self.cases[case.case_id] = case
                 
-                self.logger.info(f"Loaded {len(self.cases)} cases")
-                
+                self.logger.info(f"Loaded {len(self.cases)} cases from backend")
         except Exception as e:
-            self.logger.error(f"Error loading initial cases: {str(e)}")
+            self.logger.error(f"Failed to load cases: {e}")
     
-    async def _is_visual_marker_available(self, color: str, icon: str) -> bool:
-        """
-        Check if a visual marker combination is available.
+    def _deserialize_case(self, case_data: Dict[str, Any]) -> LegalCase:
+        """Convert backend case data to LegalCase object."""
+        visual_marker = VisualMarker(
+            color=case_data.get("visual_marker", {}).get("color", VisualMarker.COLORS[0]),
+            icon=case_data.get("visual_marker", {}).get("icon", VisualMarker.ICONS[0])
+        )
         
-        Args:
-            color: Color code
-            icon: Icon identifier
-            
-        Returns:
-            True if the combination is available
-        """
-        for case in self.cases.values():
-            if (case.visual_marker.color == color and 
-                case.visual_marker.icon == icon and 
-                case.status != CaseStatus.ARCHIVED):
-                return False
-        return True
+        return LegalCase(
+            case_id=case_data["case_id"],
+            case_name=case_data["name"],
+            initial_summary=case_data.get("summary", ""),
+            visual_marker=visual_marker,
+            status=CaseStatus(case_data.get("status", CaseStatus.ACTIVE.value)),
+            document_count=case_data.get("document_count", 0),
+            processed_documents=case_data.get("processed_documents", 0),
+            created_at=datetime.fromisoformat(case_data.get("created_at", datetime.now(timezone.utc).isoformat())),
+            updated_at=datetime.fromisoformat(case_data.get("updated_at", datetime.now(timezone.utc).isoformat()))
+        )
     
-    async def _set_current_case(self, case_id: Optional[str]) -> None:
+    def set_current_case(self, case_id: Optional[str]) -> None:
         """
         Set the current active case.
         
@@ -883,11 +794,26 @@ class CaseSidebar:
         """
         self.current_case_id = case_id
         
+        # Update upload area visibility
+        self.file_upload.visible = case_id is not None
+        
+        # Update upload status
+        if case_id:
+            case = self.cases.get(case_id)
+            case_name = case.case_name if case else "Unknown Case"
+            self.upload_status.value = f"📤 Upload documents to: **{case_name}**"
+        else:
+            self.upload_status.value = "Select a case to upload documents"
+        
         # Notify other components of case change
         if self.case_change_callback:
             self.case_change_callback(case_id)
         
         self.logger.info(f"Current case changed to: {case_id}")
+    
+    def set_case_change_callback(self, callback: Callable[[Optional[str]], None]) -> None:
+        """Set callback for case change events."""
+        self.case_change_callback = callback
     
     def _render_cases_list(self) -> str:
         """
@@ -957,112 +883,61 @@ class CaseSidebar:
         """
     
     def _render_case_stats(self) -> str:
-        """
-        Render case statistics as HTML.
-        
-        Returns:
-            HTML string for case statistics
-        """
-        if not self.cases:
-            return "<div class='no-stats'>No statistics available</div>"
-        
+        """Render case statistics as HTML."""
         total_cases = len(self.cases)
         active_cases = len([c for c in self.cases.values() if c.status == CaseStatus.ACTIVE])
-        processing_cases = len([c for c in self.cases.values() if c.status == CaseStatus.PROCESSING])
-        total_documents = sum(c.document_count for c in self.cases.values())
+        total_docs = sum(c.document_count for c in self.cases.values())
         total_size = sum(c.total_size_bytes for c in self.cases.values())
         
         return f"""
         <div class="case-statistics">
             <div class="stat-item">
-                <div class="stat-value">{total_cases}</div>
-                <div class="stat-label">Total Cases</div>
+                <span class="stat-value">{total_cases}</span>
+                <span class="stat-label">Total Cases</span>
             </div>
             <div class="stat-item">
-                <div class="stat-value">{active_cases}</div>
-                <div class="stat-label">Active</div>
+                <span class="stat-value">{active_cases}</span>
+                <span class="stat-label">Active Cases</span>
             </div>
             <div class="stat-item">
-                <div class="stat-value">{processing_cases}</div>
-                <div class="stat-label">Processing</div>
+                <span class="stat-value">{total_docs}</span>
+                <span class="stat-label">Documents</span>
             </div>
             <div class="stat-item">
-                <div class="stat-value">{total_documents}</div>
-                <div class="stat-label">Documents</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">{format_file_size(total_size)}</div>
-                <div class="stat-label">Storage</div>
+                <span class="stat-value">{format_file_size(total_size)}</span>
+                <span class="stat-label">Total Size</span>
             </div>
         </div>
         """
     
-    def _render_recent_cases_list(self) -> str:
-        """
-        Render recent cases list as HTML.
-        
-        Returns:
-            HTML string for recent cases
-        """
-        # Get cases sorted by last activity
-        recent_cases = sorted(
-            self.cases.values(),
-            key=lambda c: c.last_activity or c.created_at,
-            reverse=True
-        )[:10]  # Last 10 cases
-        
-        if not recent_cases:
-            return "<div class='no-recent-cases'>No recent cases</div>"
-        
-        html_parts = ["<div class='recent-cases-list'>"]
-        
-        for case in recent_cases:
-            last_activity = format_timestamp(case.last_activity or case.created_at)
-            
-            html_parts.append(f"""
-            <div class="recent-case-item" onclick="selectCase('{case.case_id}')">
-                <div class="recent-case-marker" style="background-color: {case.visual_marker.color};">
-                    {case.visual_marker.icon}
-                </div>
-                <div class="recent-case-info">
-                    <div class="recent-case-name">{case.case_name}</div>
-                    <div class="recent-case-activity">{last_activity}</div>
-                </div>
-            </div>
-            """)
-        
-        html_parts.append("</div>")
-        return "".join(html_parts)
-    
     def _render_upload_progress(self) -> str:
-        """
-        Render upload progress display.
-        
-        Returns:
-            HTML string for upload progress
-        """
+        """Render upload progress for active uploads."""
         if not self.active_uploads:
             return ""
         
         html_parts = ["<div class='upload-progress-list'>"]
         
         for upload in self.active_uploads.values():
-            status_icon = "📤" if upload.status == DocumentUploadStatus.UPLOADING else "⚙️"
-            if upload.status == DocumentUploadStatus.COMPLETED:
-                status_icon = "✅"
-            elif upload.status == DocumentUploadStatus.ERROR:
-                status_icon = "❌"
+            status_icon = "⏳" if upload.status == DocumentUploadStatus.UPLOADING else \
+                         "🔄" if upload.status == DocumentUploadStatus.PROCESSING else \
+                         "✅" if upload.status == DocumentUploadStatus.COMPLETED else "❌"
             
-            progress_percent = int(upload.progress * 100)
+            progress_bar = ""
+            if upload.status in [DocumentUploadStatus.UPLOADING, DocumentUploadStatus.PROCESSING]:
+                progress_bar = f"""
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {upload.progress * 100}%"></div>
+                </div>
+                """
             
             html_parts.append(f"""
             <div class="upload-item">
-                <div class="upload-icon">{status_icon}</div>
-                <div class="upload-info">
-                    <div class="upload-filename">{upload.filename}</div>
-                    <div class="upload-status">{upload.status.value.title()} ({progress_percent}%)</div>
-                    {f'<div class="upload-error">{upload.error_message}</div>' if upload.error_message else ''}
+                <div class="upload-header">
+                    <span class="upload-icon">{status_icon}</span>
+                    <span class="upload-filename">{upload.filename}</span>
                 </div>
+                {progress_bar}
+                {f'<div class="upload-error">{upload.error_message}</div>' if upload.error_message else ''}
             </div>
             """)
         
@@ -1073,122 +948,79 @@ class CaseSidebar:
         """Get icon for case status."""
         icons = {
             CaseStatus.DRAFT: "📝",
-            CaseStatus.ACTIVE: "✅",
-            CaseStatus.PROCESSING: "⚙️",
-            CaseStatus.COMPLETE: "🎯",
+            CaseStatus.ACTIVE: "🟢",
+            CaseStatus.PROCESSING: "🔄",
+            CaseStatus.COMPLETE: "✅",
             CaseStatus.ARCHIVED: "📦",
             CaseStatus.ERROR: "❌"
         }
         return icons.get(status, "❓")
     
-    def _get_upload_status(self) -> str:
-        """Get current upload status message."""
-        if not self.current_case_id:
-            return "Select a case to upload documents"
-        
-        current_case = self.cases.get(self.current_case_id)
-        if not current_case:
-            return "Selected case not found"
-        
-        return f"Ready to upload documents to: {current_case.case_name}"
-    
     # WebSocket event handlers
-    async def _handle_case_created(self, message: WebSocketMessage) -> None:
-        """Handle case creation notification."""
+    async def _handle_case_created(self, message: Dict[str, Any]) -> None:
+        """Handle case creation WebSocket messages."""
         try:
-            case_data = message.data.get("case", {})
-            # Refresh cases list
-            await self._load_initial_cases()
+            case_data = message.get("data", {})
+            case = self._deserialize_case(case_data)
+            self.cases[case.case_id] = case
+            
+            # Update UI
+            self.cases_list.value = self._render_cases_list()
+            self.case_stats.value = self._render_case_stats()
+            
         except Exception as e:
-            self.logger.error(f"Error handling case created event: {str(e)}")
+            self.logger.error(f"Error handling case creation message: {e}")
     
-    async def _handle_case_updated(self, message: WebSocketMessage) -> None:
-        """Handle case update notification."""
+    async def _handle_case_updated(self, message: Dict[str, Any]) -> None:
+        """Handle case update WebSocket messages."""
         try:
-            case_data = message.data.get("case", {})
+            case_data = message.get("data", {})
             case_id = case_data.get("case_id")
             
             if case_id in self.cases:
-                # Update case in local state
-                self.cases[case_id].status = CaseStatus(case_data.get("status", "active"))
-                self.cases[case_id].document_count = case_data.get("document_count", 0)
-                self.cases[case_id].processed_documents = case_data.get("processed_documents", 0)
-                self.cases[case_id].total_size_bytes = case_data.get("total_size_bytes", 0)
+                # Update existing case
+                self.cases[case_id] = self._deserialize_case(case_data)
                 
-                if case_data.get("last_activity"):
-                    self.cases[case_id].last_activity = datetime.fromisoformat(case_data["last_activity"])
-                
+                # Update UI
+                self.cases_list.value = self._render_cases_list()
+                self.case_stats.value = self._render_case_stats()
+            
         except Exception as e:
-            self.logger.error(f"Error handling case updated event: {str(e)}")
+            self.logger.error(f"Error handling case update message: {e}")
     
-    async def _handle_upload_progress(self, message: WebSocketMessage) -> None:
-        """Handle document upload progress."""
+    async def _handle_upload_progress(self, message: Dict[str, Any]) -> None:
+        """Handle document upload progress WebSocket messages."""
         try:
-            upload_id = message.data.get("upload_id")
-            progress = message.data.get("progress", 0.0)
-            status = message.data.get("status", "uploading")
+            progress_data = message.get("data", {})
+            upload_id = progress_data.get("upload_id")
             
             if upload_id in self.active_uploads:
-                self.active_uploads[upload_id].progress = progress
-                self.active_uploads[upload_id].status = DocumentUploadStatus(status)
+                upload = self.active_uploads[upload_id]
+                upload.progress = progress_data.get("progress", 0.0)
+                upload.status = DocumentUploadStatus(progress_data.get("status", upload.status.value))
                 
-        except Exception as e:
-            self.logger.error(f"Error handling upload progress: {str(e)}")
-    
-    async def _handle_document_processed(self, message: WebSocketMessage) -> None:
-        """Handle document processing completion."""
-        try:
-            upload_id = message.data.get("upload_id")
-            success = message.data.get("success", False)
+                # Update UI
+                self.upload_progress.value = self._render_upload_progress()
             
-            if upload_id in self.active_uploads:
-                if success:
-                    self.active_uploads[upload_id].status = DocumentUploadStatus.COMPLETED
-                    self.active_uploads[upload_id].progress = 1.0
-                    self.active_uploads[upload_id].completed_at = datetime.now(timezone.utc)
-                else:
-                    self.active_uploads[upload_id].status = DocumentUploadStatus.ERROR
-                    self.active_uploads[upload_id].error_message = message.data.get("error", "Processing failed")
-                
-                # Update case statistics
-                case_id = self.active_uploads[upload_id].case_id
-                if case_id in self.cases:
-                    await self._refresh_case_stats(case_id)
-                
         except Exception as e:
-            self.logger.error(f"Error handling document processed event: {str(e)}")
+            self.logger.error(f"Error handling upload progress message: {e}")
     
-    async def _refresh_case_stats(self, case_id: str) -> None:
-        """Refresh statistics for a specific case."""
+    async def _handle_document_processed(self, message: Dict[str, Any]) -> None:
+        """Handle document processing completion WebSocket messages."""
         try:
-            response = await self.api_client.get(f"/api/v1/cases/{case_id}")
+            doc_data = message.get("data", {})
+            case_id = doc_data.get("case_id")
             
-            if response.get("success", False) and case_id in self.cases:
-                case_data = response["case"]
-                self.cases[case_id].document_count = case_data.get("document_count", 0)
-                self.cases[case_id].processed_documents = case_data.get("processed_documents", 0)
-                self.cases[case_id].total_size_bytes = case_data.get("total_size_bytes", 0)
+            if case_id in self.cases:
+                # Update case document count
+                self.cases[case_id].processed_documents += 1
                 
+                # Update UI
+                self.cases_list.value = self._render_cases_list()
+                self.case_stats.value = self._render_case_stats()
+            
         except Exception as e:
-            self.logger.error(f"Error refreshing case stats: {str(e)}")
-    
-    def set_case_change_callback(self, callback: Callable[[Optional[str]], None]) -> None:
-        """
-        Set callback function for case change events.
-        
-        Args:
-            callback: Function to call when case changes
-        """
-        self.case_change_callback = callback
-    
-    def get_current_case_id(self) -> Optional[str]:
-        """
-        Get the current case ID.
-        
-        Returns:
-            Current case ID or None
-        """
-        return self.current_case_id
+            self.logger.error(f"Error handling document processed message: {e}")
 
 
 def create_sidebar() -> gr.Column:
@@ -1196,11 +1028,11 @@ def create_sidebar() -> gr.Column:
     Factory function to create a sidebar component.
     
     Returns:
-        Configured CaseSidebar Gradio component
+        Configured Sidebar Gradio component
     """
-    sidebar = CaseSidebar()
-    return sidebar.create_component()
+    sidebar_component = SidebarComponent()
+    return sidebar_component.create_component()
 
 
 # Export for use in main.py
-__all__ = ["CaseSidebar", "create_sidebar", "CaseStatus", "VisualMarker", "LegalCase"]
+__all__ = ["SidebarComponent", "CaseSidebar", "create_sidebar", "LegalCase", "VisualMarker", "CaseStatus"]

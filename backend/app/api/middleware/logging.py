@@ -38,7 +38,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from backend.config.settings import get_settings, Settings
+from backend.config.settings import get_settings, Settings, LoggingSettings
 from ...utils.logging import (
     get_logger,
     set_correlation_id,
@@ -645,7 +645,8 @@ def setup_logging_middleware(
     """
     # Use settings to configure logging behavior
     settings:Settings = get_settings()
-    
+    l:LoggingSettings = settings.logging
+    c:int = l.log_file_backup_count
     if not config:
         config = RequestLoggingConfig(
             log_request_body=settings.logging.log_request_body,

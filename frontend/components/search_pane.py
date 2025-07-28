@@ -56,8 +56,8 @@ import gradio as gr
 from ..utils.api_client import APIClient, APIError
 from ..utils.websocket_client import WebSocketClient, WebSocketMessage
 from ..utils.ui_helpers import (
-    format_search_result, format_timestamp, validate_search_query,
-    create_search_filters, get_search_suggestions
+    format_timestamp, validate_search_query,
+    get_search_suggestions
 )
 
 
@@ -182,7 +182,6 @@ class SearchPane:
                     elem_id="search-button",
                     scale=1
                 )
-            
             # Search type and options
             with gr.Row(elem_id="search-options-row"):
                 self.search_type = gr.Radio(
@@ -241,8 +240,6 @@ class SearchPane:
             # Search progress indicator
             self.search_progress = gr.Progress(
                 track_tqdm=True,
-                visible=False,
-                elem_id="search-progress"
             )
             
             # Search status and results count
